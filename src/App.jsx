@@ -69,14 +69,32 @@ const ComposeLogo = ({ size = 24, className = "" }) => (
     xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    <circle cx="50" cy="50" r="50" fill="#F9D731" />
+    {/* 노란색 원형 배경 */}
+    <circle cx="50" cy="50" r="50" fill="#F4C400" />
+    
+    {/* 노란 원 바깥쪽 테두리 강조 */}
+    <circle cx="50" cy="50" r="48" stroke="#FFFFFF" strokeWidth="2" opacity="0.3" />
+    
+    {/* COMPOSE COFFEE 상하 라운드 텍스트 서클 시각효과 */}
+    <circle cx="50" cy="50" r="40" stroke="#FFFFFF" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.6" />
+    
+    {/* 중심 C 자 형태 고리 */}
     <path 
-      d="M75 50C75 63.8071 63.8071 75 50 75C36.1929 75 25 63.8071 25 50C25 36.1929 36.1929 25 50 25C59.5 25 67.5 30.5 71.5 38" 
-      stroke="#1A1A1A" 
-      strokeWidth="12" 
+      d="M72 50C72 62.15 62.15 72 50 72C37.85 72 28 62.15 28 50C28 37.85 37.85 28 50 28C58.5 28 65.8 32.8 69.5 39.8" 
+      stroke="#FFFFFF" 
+      strokeWidth="7" 
       strokeLinecap="round" 
     />
-    <circle cx="50" cy="50" r="8" fill="#1A1A1A" />
+    
+    {/* 중앙 컴퍼스/나침반 바늘 (컴포즈 심볼 마크) */}
+    <path 
+      d="M50 25L57 45L75 50L57 55L50 75L43 55L25 50L43 45Z" 
+      fill="#FFFFFF" 
+    />
+    <path 
+      d="M50 25L57 45L50 50L43 45Z" 
+      fill="#F4C400" 
+    />
   </svg>
 );
 import CommuteTracker from './CommuteTracker';
