@@ -379,18 +379,14 @@ input, select, textarea {
 .pb-safe { padding-bottom: var(--safe-bottom); }
 .pt-safe { padding-top: var(--safe-top); }
 
-/* Horizontal scroll for chip filters */
+/* Wrapped layout for chip filters */
 .chip-scroll {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   padding-bottom: 2px;
-  scroll-snap-type: x mandatory;
 }
-.chip-scroll::-webkit-scrollbar { display: none; }
-.chip-scroll > * { scroll-snap-align: start; flex-shrink: 0; }
+.chip-scroll > * { flex-shrink: 0; }
 
 /* Filter chip */
 .filter-chip {
