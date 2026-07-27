@@ -64,37 +64,42 @@ const ComposeLogo = ({ size = 24, className = "" }) => (
   <svg 
     width={size} 
     height={size} 
-    viewBox="0 0 100 100" 
+    viewBox="0 0 500 500" 
     fill="none" 
     xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    {/* 노란색 원형 배경 */}
-    <circle cx="50" cy="50" r="50" fill="#F4C400" />
-    
-    {/* 노란 원 바깥쪽 테두리 강조 */}
-    <circle cx="50" cy="50" r="48" stroke="#FFFFFF" strokeWidth="2" opacity="0.3" />
-    
-    {/* COMPOSE COFFEE 상하 라운드 텍스트 서클 시각효과 */}
-    <circle cx="50" cy="50" r="40" stroke="#FFFFFF" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.6" />
-    
-    {/* 중심 C 자 형태 고리 */}
+    {/* 검정 외곽선 원 */}
+    <circle cx="250" cy="250" r="240" fill="#221E1F" />
+    {/* 메인 컴포즈 노랑 원 */}
+    <circle cx="250" cy="250" r="216" fill="#F9D731" />
+
+    {/* C 형태의 오프닝을 가진 내측 검정 중앙 원 */}
     <path 
-      d="M72 50C72 62.15 62.15 72 50 72C37.85 72 28 62.15 28 50C28 37.85 37.85 28 50 28C58.5 28 65.8 32.8 69.5 39.8" 
-      stroke="#FFFFFF" 
-      strokeWidth="7" 
-      strokeLinecap="round" 
+      d="M250 115 A135 135 0 1 0 482 250 H380 A33 33 0 0 1 250 115 Z" 
+      fill="#221E1F" 
     />
-    
-    {/* 중앙 컴퍼스/나침반 바늘 (컴포즈 심볼 마크) */}
-    <path 
-      d="M50 25L57 45L75 50L57 55L50 75L43 55L25 50L43 45Z" 
-      fill="#FFFFFF" 
-    />
-    <path 
-      d="M50 25L57 45L50 50L43 45Z" 
-      fill="#F4C400" 
-    />
+    <circle cx="250" cy="250" r="135" fill="#221E1F" />
+    {/* 오른쪽 C 트임 부분 덮개 처리 */}
+    <rect x="375" y="215" width="110" height="70" fill="#F9D731" />
+
+    {/* COMPOSE 텍스트 아치 */}
+    <path id="cmpArcT" d="M 95 250 A 155 155 0 0 1 405 250" fill="none" />
+    <text font-family="'Impact', 'Arial Black', sans-serif" font-weight="900" font-size="52" fill="#221E1F" letter-spacing="3.5">
+      <textPath href="#cmpArcT" startOffset="50%" text-anchor="middle">COMPOSE</textPath>
+    </text>
+
+    {/* COFFEE 텍스트 아치 */}
+    <path id="cmpArcB" d="M 405 250 A 155 155 0 0 1 95 250" fill="none" />
+    <text font-family="'Impact', 'Arial Black', sans-serif" font-weight="900" font-size="52" fill="#221E1F" letter-spacing="5">
+      <textPath href="#cmpArcB" startOffset="50%" text-anchor="middle">COFFEE</textPath>
+    </text>
+
+    {/* 중앙 황금색 나침반 다이아몬드 바늘 */}
+    <g transform="rotate(-32 250 250)">
+      <polygon points="250,150 298,250 250,350 202,250" fill="#F9D731" />
+      <circle cx="250" cy="250" r="18" fill="#221E1F" />
+    </g>
   </svg>
 );
 import CommuteTracker from './CommuteTracker';
@@ -3738,9 +3743,9 @@ const AuthScreen = ({ onLogin, onSignup, onResetPassword, orgUnits: initialOrgUn
                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200">System v2.4.0</span>
             </div>
             
-            <div className="w-[120px] h-[120px] bg-[#1A1A1A] rounded-[3rem] flex items-center justify-center mb-12 shadow-2xl shadow-yellow-500/10 border border-white/5 group relative overflow-hidden">
-               <div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/10 to-transparent"></div>
-               <ComposeLogo size={64} className="relative z-10" />
+            <div className="w-[120px] h-[120px] bg-[#F9D731]/10 rounded-[3rem] flex items-center justify-center mb-10 shadow-2xl shadow-yellow-500/20 border border-yellow-400/20 group relative overflow-hidden p-2">
+               <div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/20 to-transparent"></div>
+               <ComposeLogo size={100} className="relative z-10 drop-shadow-md transition-transform duration-300 group-hover:scale-105" />
             </div>
             
             <h2 className="text-5xl lg:text-7xl font-black tracking-tight leading-[1.05] mb-8">
