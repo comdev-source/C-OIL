@@ -1140,7 +1140,7 @@ const App = () => {
   return (
     <>
       {statusMessage && (
-        <div className={`fixed top-4 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-[1000] px-5 py-4 rounded-2xl shadow-2xl border animate-slide-up flex items-center gap-3 sm:min-w-[320px] sm:max-w-md ${
+        <div className={`fixed top-[20vh] inset-x-5 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-[1000] px-5 py-4 rounded-[20px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] border animate-bounce-in flex items-center gap-3 sm:min-w-[320px] sm:max-w-md ${
           statusMessage.type === 'error' 
             ? 'bg-red-50 text-red-700 border-red-100' 
             : statusMessage.type === 'info'
