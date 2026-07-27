@@ -1449,11 +1449,11 @@ const Dashboard = ({ logs, profile, users, orgUnits, onSearch, isSearching }) =>
       {/* Chip Scroll Filters */}
       <div className="chip-scroll pb-1">
         {/* Month Filter */}
-        <div className="filter-chip active gap-1.5">
-          <Calendar size={13} />
+        <div className="filter-chip active gap-1">
+          <Calendar size={12} />
           <input
             type="month"
-            className="bg-transparent outline-none font-bold text-[13px] text-[--primary] cursor-pointer w-[110px]"
+            className="bg-transparent outline-none font-bold text-[12px] text-[--primary] cursor-pointer w-[95px]"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
           />
@@ -1461,10 +1461,10 @@ const Dashboard = ({ logs, profile, users, orgUnits, onSearch, isSearching }) =>
 
         {/* Dept Filter (admin only) */}
         {profile?.role === 'admin' && (
-          <div className={`filter-chip gap-1.5 ${selectedDept !== 'all' ? 'active' : ''}`}>
-            <Users size={13} />
+          <div className={`filter-chip gap-1 ${selectedDept !== 'all' ? 'active' : ''}`}>
+            <Users size={12} />
             <select
-              className="bg-transparent outline-none font-bold text-[13px] cursor-pointer max-w-[120px]"
+              className="bg-transparent outline-none font-bold text-[12px] cursor-pointer max-w-[80px] truncate"
               style={{color: 'inherit'}}
               value={selectedDept}
               onChange={(e) => { setSelectedDept(e.target.value); setSelectedUserId('all'); }}
@@ -1477,10 +1477,10 @@ const Dashboard = ({ logs, profile, users, orgUnits, onSearch, isSearching }) =>
 
         {/* User Filter (admin/manager) */}
         {(profile?.role === 'admin' || profile?.role === 'manager') && (
-          <div className={`filter-chip gap-1.5 ${selectedUserId !== 'all' ? 'active' : ''}`}>
-            <User size={13} />
+          <div className={`filter-chip gap-1 ${selectedUserId !== 'all' ? 'active' : ''}`}>
+            <User size={12} />
             <select
-              className="bg-transparent outline-none font-bold text-[13px] cursor-pointer max-w-[130px]"
+              className="bg-transparent outline-none font-bold text-[12px] cursor-pointer max-w-[85px] truncate"
               style={{color: 'inherit'}}
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}

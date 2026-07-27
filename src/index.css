@@ -379,31 +379,34 @@ input, select, textarea {
 .pb-safe { padding-bottom: var(--safe-bottom); }
 .pt-safe { padding-top: var(--safe-top); }
 
-/* Wrapped layout for chip filters */
+/* Horizontal scroll for chip filters */
 .chip-scroll {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding-bottom: 2px;
 }
+.chip-scroll::-webkit-scrollbar { display: none; }
 .chip-scroll > * { flex-shrink: 0; }
 
 /* Filter chip */
 .filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 4px;
+  padding: 6px 10px;
   border-radius: var(--radius-full);
   border: 1.5px solid var(--gray-200);
   background: var(--bg-card);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--gray-500);
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  min-height: 38px;
+  min-height: 34px;
 }
 .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
 .filter-chip.active {
