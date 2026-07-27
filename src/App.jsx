@@ -600,7 +600,6 @@ const App = () => {
       const snapshot = await getDocs(logsQuery);
       
       setLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      showStatus(`${snapshot.size}건의 내역을 불러왔습니다.`, 'info');
     } catch (err) {
       secureLog.error('logs search error:', err);
       if (err.code === 'failed-precondition') {
