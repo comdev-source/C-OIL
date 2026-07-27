@@ -3690,14 +3690,14 @@ const AuthScreen = ({ onLogin, onSignup, onResetPassword, orgUnits: initialOrgUn
   }, [db, appId]);
 
   return (
-    <div className="min-h-screen bg-[#f1f4f9] flex items-center justify-center p-4 lg:p-10 font-['Outfit'] relative overflow-hidden">
+    <div className="min-h-screen bg-[#f1f4f9] flex items-center justify-center p-3 lg:p-6 font-['Outfit'] relative overflow-hidden">
       {/* Decorative background blobs */}
       <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-indigo-100 rounded-full blur-[120px] opacity-60"></div>
       <div className="absolute bottom-[-10%] right-[-5%] w-[35%] h-[35%] bg-blue-100 rounded-full blur-[100px] opacity-60"></div>
       
-      <div className="bg-white w-full max-w-[1150px] min-h-[700px] rounded-[3.5rem] shadow-[0_32px_80px_-16px_rgba(30,41,59,0.1)] overflow-hidden flex flex-col lg:flex-row relative z-10 border border-white">
+      <div className="bg-white w-full max-w-[1100px] rounded-[2.8rem] shadow-[0_24px_64px_-16px_rgba(30,41,59,0.1)] overflow-hidden flex flex-col lg:flex-row relative z-10 border border-white my-auto max-h-[92vh]">
         {/* Left Panel: Branding & Story */}
-        <div className="lg:w-[45%] bg-[#0f172a] p-12 lg:p-16 text-white flex flex-col justify-between relative overflow-hidden">
+        <div className="lg:w-[45%] bg-[#0f172a] p-8 lg:p-12 text-white flex flex-col justify-between relative overflow-hidden">
           {/* Advanced Mesh Gradient Overlay */}
           <div className="absolute top-0 right-0 w-[120%] h-[120%] bg-gradient-to-tr from-indigo-900/40 via-blue-900/20 to-transparent pointer-events-none"></div>
           <div className="absolute -top-20 -right-20 w-80 h-80 bg-indigo-600/30 rounded-full blur-[80px]"></div>
@@ -3749,7 +3749,7 @@ const AuthScreen = ({ onLogin, onSignup, onResetPassword, orgUnits: initialOrgUn
         </div>
         
         {/* Right Panel: Auth Form */}
-        <div className="flex-1 p-12 lg:p-24 bg-white flex flex-col justify-center">
+        <div className="flex-1 p-8 lg:p-14 bg-white flex flex-col justify-center overflow-y-auto">
           <div className="max-w-[420px] mx-auto w-full">
             {isForgotPassword ? (
               <div className="animate-slide-up">
