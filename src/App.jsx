@@ -850,12 +850,16 @@ const App = () => {
 
       showStatus(logData.id ? "기록이 수정되었습니다." : "기록이 저장되었습니다.");
       
-      // [FIX] 수정된 내역을 바로 볼 수 있도록 해당 월로 필터 자동 전환
+      // [FIX] 수정된 내역을 바로 볼 수 있도록 해당 월로 필터 자동 전환 및 즉시 조회
       if (payload.date) {
-        setHistoryFilters(prev => ({
-          ...prev,
+        const updatedFilters = {
+          ...historyFilters,
           selectedMonth: payload.date.slice(0, 7)
-        }));
+        };
+        setHistoryFilters(updatedFilters);
+        handleSearchLogs(updatedFilters);
+      } else {
+        handleSearchLogs();
       }
       
       setView('history');
