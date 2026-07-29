@@ -1920,7 +1920,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
     setFormData({ ...formData, waypoints: newWaypoints });
   };
 
-  const handleQuickSelect = async (index, location) => {
+  const handleQuickSelect = (index, location) => {
     const applyToForm = (addr, name, lat, lng) => {
       setFormData(prev => {
         const newWaypoints = [...prev.waypoints];
@@ -1940,12 +1940,13 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
       applyToForm(location.address, location.name, location.lat, location.lng);
     } else if (location.address) {
       // 좌표가 없는 경우 지오코더 호출 (SDK 로드 대기)
-      const coords = await geocodeAddress(location.address);
-      if (coords) {
-        applyToForm(location.address, location.name, coords.lat, coords.lng);
-      } else {
-        applyToForm(location.address, location.name, 37.5, 127.0);
-      }
+      geocodeAddress(location.address).then(coords => {
+        if (coords) {
+          applyToForm(location.address, location.name, coords.lat, coords.lng);
+        } else {
+          applyToForm(location.address, location.name, 37.5, 127.0);
+        }
+      });
     }
   };
 
@@ -2362,7 +2363,9 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                    <button 
                       type="button"
                       key={loc.id}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         handleQuickSelect(favSelectorIdx, loc);
                         setFavSelectorIdx(null);
                         setFavSearch('');
