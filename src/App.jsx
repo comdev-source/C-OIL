@@ -1881,19 +1881,21 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
   };
 
   const handleQuickSelect = (index, location) => {
-    if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+    if (location.address && window.kakao && window.kakao.maps && window.kakao.maps.services) {
       const geocoder = new window.kakao.maps.services.Geocoder();
       geocoder.addressSearch(location.address, (result, status) => {
         if (status === window.kakao.maps.services.Status.OK) {
-          const newWaypoints = [...formData.waypoints];
-          newWaypoints[index] = {
-            ...newWaypoints[index],
-            address: location.address,
-            alias: location.name,
-            lat: parseFloat(result[0].y),
-            lng: parseFloat(result[0].x)
-          };
-          setFormData(prev => ({ ...prev, waypoints: newWaypoints }));
+          setFormData(prev => {
+            const newWaypoints = [...prev.waypoints];
+            newWaypoints[index] = {
+              ...newWaypoints[index],
+              address: location.address,
+              alias: location.name,
+              lat: parseFloat(result[0].y),
+              lng: parseFloat(result[0].x)
+            };
+            return { ...prev, waypoints: newWaypoints };
+          });
         } else {
           applyQuickSelectDirectly(index, location);
         }
@@ -1904,15 +1906,17 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
   };
 
   const applyQuickSelectDirectly = (index, location) => {
-    const newWaypoints = [...formData.waypoints];
-    newWaypoints[index] = {
-      ...newWaypoints[index],
-      address: location.address,
-      alias: location.name,
-      lat: location.lat || 37.5,
-      lng: location.lng || 127.0
-    };
-    setFormData(prev => ({ ...prev, waypoints: newWaypoints }));
+    setFormData(prev => {
+      const newWaypoints = [...prev.waypoints];
+      newWaypoints[index] = {
+        ...newWaypoints[index],
+        address: location.address || '',
+        alias: location.name || '',
+        lat: location.lat || 37.5,
+        lng: location.lng || 127.0
+      };
+      return { ...prev, waypoints: newWaypoints };
+    });
   };
 
   const handleAliasChange = (index, value) => {
@@ -2287,7 +2291,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                    </h4>
                    <p className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Select from saved locations</p>
                 </div>
-                <button onClick={() => { setFavSelectorIdx(null); setFavSearch(''); }} className="p-2.5 hover:bg-white rounded-2xl transition-all shadow-sm">
+                <button type="button" onClick={() => { setFavSelectorIdx(null); setFavSearch(''); }} className="p-2.5 hover:bg-white rounded-2xl transition-all shadow-sm">
                    <X size={20} className="text-slate-400" />
                 </button>
               </div>
@@ -2312,6 +2316,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                 .filter(loc => loc.name?.toLowerCase().includes(favSearch.toLowerCase()) || loc.address?.toLowerCase().includes(favSearch.toLowerCase()))
                 .map(loc => (
                    <button 
+                      type="button"
                       key={loc.id}
                       onClick={() => {
                         handleQuickSelect(favSelectorIdx, loc);
@@ -3866,7 +3871,7 @@ const AuthScreen = ({ onLogin, onSignup, onResetPassword, orgUnits: initialOrgUn
       </div>
 
       {/* ─── DESKTOP LAYOUT (lg+) ─── */}
-      <div className="hidden lg:flex min-h-screen bg-[#f1f4f9] items-center justify-center p-6 relative overflow-hidden">
+      <div className="hidden lg:flex min-h-[100dvh] bg-[#f1f4f9] items-center justify-center p-6 relative overflow-hidden">
         <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-indigo-100 rounded-full blur-[120px] opacity-60" />
         <div className="absolute bottom-[-10%] right-[-5%] w-[35%] h-[35%] bg-blue-100 rounded-full blur-[100px] opacity-60" />
 
@@ -4092,7 +4097,7 @@ const AuthScreen = ({ onLogin, onSignup, onResetPassword, orgUnits: initialOrgUn
       </div>
       
       {/* Decorative footer text */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] pointer-events-none">
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] pointer-events-none">
         Secure Access Interface · Enterprise Mobility Platform
       </div>
     </div>
