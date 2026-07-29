@@ -1827,17 +1827,16 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
   }, [formData.distance, formData.waypoints]);
 
 
-  // 카카오 SDK 로드 대기 헬퍼
   const waitForKakaoSDK = () => {
     return new Promise((resolve) => {
-      if (window.__kakaoReady && window.kakao?.maps?.services) {
+      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
         resolve(true);
         return;
       }
       let attempts = 0;
       const check = setInterval(() => {
         attempts++;
-        if (window.__kakaoReady && window.kakao?.maps?.services) {
+        if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
           clearInterval(check);
           resolve(true);
         } else if (attempts > 50) { // 5초 대기
@@ -3186,7 +3185,7 @@ const MyPage = ({ profile, onUpdate, showStatus, onLogout }) => {
         
         // SDK 로드 대기 후 지오코딩
         let lat = 37.5, lng = 126.9;
-        const ready = window.__kakaoReady && window.kakao?.maps?.services;
+        const ready = window.kakao && window.kakao.maps && window.kakao.maps.services;
         if (ready) {
           try {
             const coords = await new Promise((resolve) => {
@@ -3289,7 +3288,7 @@ const MyPage = ({ profile, onUpdate, showStatus, onLogout }) => {
                     const placeName = data.buildingName || data.bname || '새 장소';
 
                     let lat = 37.5, lng = 127.0;
-                    const ready = window.__kakaoReady && window.kakao?.maps?.services;
+                    const ready = window.kakao && window.kakao.maps && window.kakao.maps.services;
                     if (ready) {
                       try {
                         const coords = await new Promise((resolve) => {
