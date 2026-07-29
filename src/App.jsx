@@ -1889,7 +1889,21 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
   };
 
   const handleQuickSelect = (index, location) => {
-    if (location.address && window.kakao && window.kakao.maps && window.kakao.maps.services) {
+    // 이미 좌표가 있는 경우 (즐겨찾기, 우리집 등) 바로 적용
+    if (location.lat && location.lng) {
+      setFormData(prev => {
+        const newWaypoints = [...prev.waypoints];
+        newWaypoints[index] = {
+          ...newWaypoints[index],
+          address: location.address || '',
+          alias: location.name || '',
+          lat: location.lat,
+          lng: location.lng
+        };
+        return { ...prev, waypoints: newWaypoints };
+      });
+    } else if (location.address && window.kakao && window.kakao.maps && window.kakao.maps.services) {
+      // 좌표가 없는 경우에만 지오코더 호출
       const geocoder = new window.kakao.maps.services.Geocoder();
       geocoder.addressSearch(location.address, (result, status) => {
         if (status === window.kakao.maps.services.Status.OK) {
