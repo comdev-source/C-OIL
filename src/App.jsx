@@ -1827,42 +1827,74 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
   }, [formData.distance, formData.waypoints]);
 
 
+  // 카카오 SDK 로드 대기 헬퍼
+  const waitForKakaoSDK = () => {
+    return new Promise((resolve) => {
+      if (window.__kakaoReady && window.kakao?.maps?.services) {
+        resolve(true);
+        return;
+      }
+      let attempts = 0;
+      const check = setInterval(() => {
+        attempts++;
+        if (window.__kakaoReady && window.kakao?.maps?.services) {
+          clearInterval(check);
+          resolve(true);
+        } else if (attempts > 50) { // 5초 대기
+          clearInterval(check);
+          resolve(false);
+        }
+      }, 100);
+    });
+  };
+
+  const geocodeAddress = async (address) => {
+    const ready = await waitForKakaoSDK();
+    if (!ready) return null;
+    return new Promise((resolve) => {
+      const geocoder = new window.kakao.maps.services.Geocoder();
+      geocoder.addressSearch(address, (result, status) => {
+        if (status === window.kakao.maps.services.Status.OK) {
+          resolve({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) });
+        } else {
+          resolve(null);
+        }
+      });
+    });
+  };
+
   const openSearch = (index) => {
     new window.daum.Postcode({
-      oncomplete: function(data) {
+      oncomplete: async function(data) {
         const fullAddress = data.address;
         const placeName = data.buildingName || ''; // 건물명 추출 (예: 서울역)
 
-        // 카카오 지오코더로 실제 좌표 검색
-        if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-          const geocoder = new window.kakao.maps.services.Geocoder();
-          
-          geocoder.addressSearch(fullAddress, (result, status) => {
-            if (status === window.kakao.maps.services.Status.OK) {
-              const realLat = parseFloat(result[0].y);
-              const realLng = parseFloat(result[0].x);
-              
-              const newWaypoints = [...formData.waypoints];
-              newWaypoints[index] = { 
-                ...newWaypoints[index], 
-                address: fullAddress,
-                lat: realLat,
-                lng: realLng
-              };
-              // 검색된 건물명이 있고 기존 명칭이 비어있다면 자동 입력
-              if (!newWaypoints[index].alias && placeName) {
-                newWaypoints[index].alias = placeName;
-              }
-              setFormData({ ...formData, waypoints: newWaypoints });
-            } else {
-              // 검색 실패 시 기존 로직 유지 (폴백)
-              applyFallbackCoords(index, fullAddress, placeName);
-            }
-          });
+        // 카카오 지오코더로 실제 좌표 검색 (SDK 로드 대기)
+        const coords = await geocodeAddress(fullAddress);
+        
+        const newWaypoints = [...formData.waypoints];
+        if (coords) {
+          newWaypoints[index] = { 
+            ...newWaypoints[index], 
+            address: fullAddress,
+            lat: coords.lat,
+            lng: coords.lng
+          };
         } else {
-          // SDK 미로드 시 기존 로직 유지 (폴백)
-          applyFallbackCoords(index, fullAddress, placeName);
+          // 검색 실패 시 폴백
+          const seed = fullAddress.length;
+          newWaypoints[index] = { 
+            ...newWaypoints[index], 
+            address: fullAddress,
+            lat: 37.5 + (seed % 100) / 500,
+            lng: 127.0 + (seed % 100) / 500
+          };
         }
+        // 검색된 건물명이 있고 기존 명칭이 비어있다면 자동 입력
+        if (!newWaypoints[index].alias && placeName) {
+          newWaypoints[index].alias = placeName;
+        }
+        setFormData(prev => ({ ...prev, waypoints: newWaypoints }));
       }
     }).open({
       left: window.screenX + (window.outerWidth - 500) / 2,
@@ -1888,42 +1920,32 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
     setFormData({ ...formData, waypoints: newWaypoints });
   };
 
-  const handleQuickSelect = (index, location) => {
-    // 이미 좌표가 있는 경우 (즐겨찾기, 우리집 등) 바로 적용
-    if (location.lat && location.lng) {
+  const handleQuickSelect = async (index, location) => {
+    const applyToForm = (addr, name, lat, lng) => {
       setFormData(prev => {
         const newWaypoints = [...prev.waypoints];
         newWaypoints[index] = {
           ...newWaypoints[index],
-          address: location.address || '',
-          alias: location.name || '',
-          lat: location.lat,
-          lng: location.lng
+          address: addr || '',
+          alias: name || '',
+          lat: lat,
+          lng: lng
         };
         return { ...prev, waypoints: newWaypoints };
       });
-    } else if (location.address && window.kakao && window.kakao.maps && window.kakao.maps.services) {
-      // 좌표가 없는 경우에만 지오코더 호출
-      const geocoder = new window.kakao.maps.services.Geocoder();
-      geocoder.addressSearch(location.address, (result, status) => {
-        if (status === window.kakao.maps.services.Status.OK) {
-          setFormData(prev => {
-            const newWaypoints = [...prev.waypoints];
-            newWaypoints[index] = {
-              ...newWaypoints[index],
-              address: location.address,
-              alias: location.name,
-              lat: parseFloat(result[0].y),
-              lng: parseFloat(result[0].x)
-            };
-            return { ...prev, waypoints: newWaypoints };
-          });
-        } else {
-          applyQuickSelectDirectly(index, location);
-        }
-      });
-    } else {
-      applyQuickSelectDirectly(index, location);
+    };
+
+    // 이미 좌표가 있는 경우 (즐겨찾기, 우리집 등) 바로 적용
+    if (location.lat && location.lng) {
+      applyToForm(location.address, location.name, location.lat, location.lng);
+    } else if (location.address) {
+      // 좌표가 없는 경우 지오코더 호출 (SDK 로드 대기)
+      const coords = await geocodeAddress(location.address);
+      if (coords) {
+        applyToForm(location.address, location.name, coords.lat, coords.lng);
+      } else {
+        applyToForm(location.address, location.name, 37.5, 127.0);
+      }
     }
   };
 
@@ -3156,31 +3178,35 @@ const MyPage = ({ profile, onUpdate, showStatus, onLogout }) => {
 
   const openHomeSearch = () => {
     new window.daum.Postcode({
-      oncomplete: function(data) {
+      oncomplete: async function(data) {
         const fullAddress = data.address;
         
-        if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-          const geocoder = new window.kakao.maps.services.Geocoder();
-          geocoder.addressSearch(fullAddress, (result, status) => {
-            if (status === window.kakao.maps.services.Status.OK) {
-              setLocalProfile(prev => ({
-                ...prev,
-                homeAddress: fullAddress,
-                homeAlias: prev.homeAlias || '우리집',
-                homeLat: parseFloat(result[0].y),
-                homeLng: parseFloat(result[0].x)
-              }));
-            }
-          });
-        } else {
-          setLocalProfile(prev => ({
-            ...prev,
-            homeAddress: fullAddress,
-            homeAlias: prev.homeAlias || '우리집',
-            homeLat: 37.5,
-            homeLng: 126.9
-          }));
+        // SDK 로드 대기 후 지오코딩
+        let lat = 37.5, lng = 126.9;
+        const ready = window.__kakaoReady && window.kakao?.maps?.services;
+        if (ready) {
+          try {
+            const coords = await new Promise((resolve) => {
+              const geocoder = new window.kakao.maps.services.Geocoder();
+              geocoder.addressSearch(fullAddress, (result, status) => {
+                if (status === window.kakao.maps.services.Status.OK) {
+                  resolve({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) });
+                } else {
+                  resolve(null);
+                }
+              });
+            });
+            if (coords) { lat = coords.lat; lng = coords.lng; }
+          } catch(e) { /* fallback */ }
         }
+        
+        setLocalProfile(prev => ({
+          ...prev,
+          homeAddress: fullAddress,
+          homeAlias: prev.homeAlias || '우리집',
+          homeLat: lat,
+          homeLng: lng
+        }));
       }
     }).open({
       left: window.screenX + (window.outerWidth - 500) / 2,
@@ -3255,28 +3281,39 @@ const MyPage = ({ profile, onUpdate, showStatus, onLogout }) => {
             <button 
               onClick={() => {
                 new window.daum.Postcode({
-                  oncomplete: function(data) {
+                  oncomplete: async function(data) {
                     const fullAddress = data.address;
                     const placeName = data.buildingName || data.bname || '새 장소';
 
-                    if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-                      const geocoder = new window.kakao.maps.services.Geocoder();
-                      geocoder.addressSearch(fullAddress, (result, status) => {
-                        if (status === window.kakao.maps.services.Status.OK) {
-                          const newLoc = {
-                            id: Date.now(),
-                            name: placeName,
-                            address: fullAddress,
-                            lat: parseFloat(result[0].y),
-                            lng: parseFloat(result[0].x)
-                          };
-                          setLocalProfile(prev => ({
-                             ...prev,
-                             savedLocations: [...(prev.savedLocations || []), newLoc]
-                          }));
-                        }
-                      });
+                    let lat = 37.5, lng = 127.0;
+                    const ready = window.__kakaoReady && window.kakao?.maps?.services;
+                    if (ready) {
+                      try {
+                        const coords = await new Promise((resolve) => {
+                          const geocoder = new window.kakao.maps.services.Geocoder();
+                          geocoder.addressSearch(fullAddress, (result, status) => {
+                            if (status === window.kakao.maps.services.Status.OK) {
+                              resolve({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) });
+                            } else {
+                              resolve(null);
+                            }
+                          });
+                        });
+                        if (coords) { lat = coords.lat; lng = coords.lng; }
+                      } catch(e) { /* fallback */ }
                     }
+                    
+                    const newLoc = {
+                      id: Date.now(),
+                      name: placeName,
+                      address: fullAddress,
+                      lat: lat,
+                      lng: lng
+                    };
+                    setLocalProfile(prev => ({
+                       ...prev,
+                       savedLocations: [...(prev.savedLocations || []), newLoc]
+                    }));
                   }
                 }).open({
                   left: window.screenX + (window.outerWidth - 500) / 2,

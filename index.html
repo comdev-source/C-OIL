@@ -11,7 +11,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
     <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=6d278d0cf14afb42d745c91ee09cbb5d&libraries=services"></script>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=6d278d0cf14afb42d745c91ee09cbb5d&libraries=services&autoload=false"></script>
+    <script>
+      if (window.kakao && window.kakao.maps) {
+        window.kakao.maps.load(function() {
+          console.log('[Kakao SDK] Maps & Services loaded successfully.');
+          window.__kakaoReady = true;
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
