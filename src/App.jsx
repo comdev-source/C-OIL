@@ -1831,6 +1831,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
     new window.daum.Postcode({
       oncomplete: function(data) {
         const fullAddress = data.address;
+        const placeName = data.buildingName || ''; // 건물명 추출 (예: 서울역)
 
         // 카카오 지오코더로 실제 좌표 검색
         if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
@@ -1848,15 +1849,19 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                 lat: realLat,
                 lng: realLng
               };
+              // 검색된 건물명이 있고 기존 명칭이 비어있다면 자동 입력
+              if (!newWaypoints[index].alias && placeName) {
+                newWaypoints[index].alias = placeName;
+              }
               setFormData({ ...formData, waypoints: newWaypoints });
             } else {
               // 검색 실패 시 기존 로직 유지 (폴백)
-              applyFallbackCoords(index, fullAddress);
+              applyFallbackCoords(index, fullAddress, placeName);
             }
           });
         } else {
           // SDK 미로드 시 기존 로직 유지 (폴백)
-          applyFallbackCoords(index, fullAddress);
+          applyFallbackCoords(index, fullAddress, placeName);
         }
       }
     }).open({
@@ -1865,7 +1870,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
     });
   };
 
-  const applyFallbackCoords = (index, fullAddress) => {
+  const applyFallbackCoords = (index, fullAddress, placeName = '') => {
     const seed = fullAddress.length;
     const mockLat = 37.5 + (seed % 100) / 500;
     const mockLng = 127.0 + (seed % 100) / 500;
@@ -1877,6 +1882,9 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
       lat: mockLat,
       lng: mockLng
     };
+    if (!newWaypoints[index].alias && placeName) {
+      newWaypoints[index].alias = placeName;
+    }
     setFormData({ ...formData, waypoints: newWaypoints });
   };
 
@@ -2299,7 +2307,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                 <Search size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
                 <input 
                    type="text"
-                   placeholder="장소를 검색하세요..."
+                   placeholder="즐겨찾기 장소를 검색하세요..."
                    className="w-full pl-14 pr-6 py-4.5 rounded-[1.5rem] bg-white border border-slate-100 outline-none focus:ring-4 focus:ring-indigo-100/50 focus:border-indigo-400 transition-all font-black text-slate-700 shadow-sm"
                    autoFocus
                    value={favSearch}
