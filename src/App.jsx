@@ -175,9 +175,9 @@ const RouteMapPreview = ({ routePath, onClose }) => {
       const mapOption = {
         center: new kakao.maps.LatLng(routePath[0].lat, routePath[0].lng),
         level: 3,
-        draggable: true,
-        scrollwheel: true,
-        disableDoubleClickZoom: false
+        draggable: false,
+        scrollwheel: false,
+        disableDoubleClickZoom: true
       };
       
       const map = new kakao.maps.Map(mapRef.current, mapOption);
@@ -204,7 +204,7 @@ const RouteMapPreview = ({ routePath, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-fade-in" onClick={onClose} style={{ touchAction: 'none' }}>
-      <div className="bg-white w-full max-w-3xl h-[70vh] sm:h-[80vh] rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up flex flex-col relative border border-white/20" onClick={e => e.stopPropagation()}>
+      <div className="bg-white w-full max-w-3xl h-[70vh] sm:h-[80vh] rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up flex flex-col relative border border-white/20 cursor-pointer" onClick={onClose}>
         
         {/* Header */}
         <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
@@ -223,6 +223,9 @@ const RouteMapPreview = ({ routePath, onClose }) => {
 
         {/* Map Container */}
         <div ref={mapRef} className="w-full h-full bg-slate-100" />
+        
+        {/* Invisible Overlay to capture all clicks and prevent map interaction */}
+        <div className="absolute inset-0 z-10" />
       </div>
     </div>
   );
