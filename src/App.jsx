@@ -2366,27 +2366,38 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        const targetIdx = favSelectorIdx;
-                        const addr = loc.address || '';
-                        const alias = loc.name || '';
-                        const lat = loc.lat || 37.5;
-                        const lng = loc.lng || 127.0;
-                        // flushSync로 강제 동기 업데이트 후 모달 닫기
-                        flushSync(() => {
-                          setFormData(prev => {
-                            const newWaypoints = [...prev.waypoints];
-                            newWaypoints[targetIdx] = {
-                              ...newWaypoints[targetIdx],
-                              address: addr,
-                              alias: alias,
-                              lat: lat,
-                              lng: lng
-                            };
-                            return { ...prev, waypoints: newWaypoints };
-                          });
-                        });
-                        setFavSelectorIdx(null);
-                        setFavSearch('');
+                        try {
+                          const targetIdx = favSelectorIdx;
+                          const addr = loc.address || '';
+                          const alias = loc.name || '';
+                          const lat = loc.lat || 37.5;
+                          const lng = loc.lng || 127.0;
+                          console.log('[FAV-SELECT-v2] idx:', targetIdx, 'addr:', addr, 'alias:', alias, 'lat:', lat, 'lng:', lng);
+                          // 모달 먼저 닫기
+                          setFavSelectorIdx(null);
+                          setFavSearch('');
+                          // 폼 데이터는 다음 틱에서 업데이트 (모달 닫기와 분리)
+                          setTimeout(() => {
+                            setFormData(prev => {
+                              const newWaypoints = [...prev.waypoints];
+                              if (newWaypoints[targetIdx]) {
+                                newWaypoints[targetIdx] = {
+                                  ...newWaypoints[targetIdx],
+                                  address: addr,
+                                  alias: alias,
+                                  lat: lat,
+                                  lng: lng
+                                };
+                              }
+                              console.log('[FAV-SELECT-v2] Updated waypoints:', JSON.stringify(newWaypoints.map(w => ({address: w.address, alias: w.alias}))));
+                              return { ...prev, waypoints: newWaypoints };
+                            });
+                          }, 50);
+                        } catch(err) {
+                          console.error('[FAV-SELECT-v2] Error:', err);
+                          setFavSelectorIdx(null);
+                          setFavSearch('');
+                        }
                       }}
                       className="w-full flex items-center gap-4 p-5 rounded-[1.5rem] hover:bg-slate-50 transition-all text-left group border border-transparent hover:border-slate-100"
                    >
