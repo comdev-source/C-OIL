@@ -2328,7 +2328,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
 
       {/* Favorites Selector Modal - Moved outside loop to prevent UI flickering/duplication */}
       {favSelectorIdx !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in" onClick={() => { alert('OVERLAY CLICKED'); setFavSelectorIdx(null); setFavSearch(''); }}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in" onClick={() => { setFavSelectorIdx(null); setFavSearch(''); }}>
           <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-slide-up border border-white/20" onClick={e => e.stopPropagation()}>
             <div className="p-8 border-b border-slate-50 bg-slate-50/30">
               <div className="flex justify-between items-start mb-6">
@@ -2338,7 +2338,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                    </h4>
                    <p className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Select from saved locations</p>
                 </div>
-                <button type="button" onClick={() => { alert('X BUTTON CLICKED'); setFavSelectorIdx(null); setFavSearch(''); }} className="p-2.5 hover:bg-white rounded-2xl transition-all shadow-sm">
+                <button type="button" onClick={() => { setFavSelectorIdx(null); setFavSearch(''); }} className="p-2.5 hover:bg-white rounded-2xl transition-all shadow-sm">
                    <X size={20} className="text-slate-400" />
                 </button>
               </div>
@@ -2367,7 +2367,6 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                       onPointerDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        alert(`ITEM CLICKED: ${loc.name}`);
                         console.log('[FAV-CLICK-RAW]', loc);
                         const idx = favSelectorIdx;
                         const a = loc.address || '';
