@@ -157,7 +157,7 @@ const formatOrgUnitLabel = (name) => {
   return name;
 };
 
-const RouteMapPreview = ({ routePath, waypoints, onClose }) => {
+const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose }) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -254,6 +254,25 @@ const RouteMapPreview = ({ routePath, waypoints, onClose }) => {
 
         {/* Map Container */}
         <div ref={mapRef} className="w-full h-full bg-slate-100 pointer-events-none" />
+        
+        {/* Route Sections Summary */}
+        {waypoints && routeSections && routeSections.length > 0 && (
+          <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none">
+            <div className="bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-slate-700/50 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+              {waypoints.map((wp, idx) => (
+                <React.Fragment key={idx}>
+                  <span className="text-white/95 text-[12px] font-bold tracking-tight">{idx === 0 ? '출발' : (idx === waypoints.length - 1 ? '도착' : `경유${idx}`)}</span>
+                  {idx < waypoints.length - 1 && routeSections[idx] !== undefined && (
+                    <div className="flex items-center gap-1 text-slate-400">
+                       <span className="text-[10px] text-indigo-300 font-bold bg-indigo-500/20 px-1.5 py-0.5 rounded-md border border-indigo-500/30 shadow-sm">{routeSections[idx].toFixed(1)}km</span>
+                       <span className="text-[10px] text-slate-500">➔</span>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Invisible Overlay to capture all clicks and prevent map interaction */}
         <div className="absolute inset-0 z-10 w-full h-full cursor-pointer" onTouchStart={handleClose} onPointerDown={handleClose} onClick={handleClose} />
@@ -1847,8 +1866,8 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
   const [favSearch, setFavSearch] = useState('');
 
   // key prop 덕분에 component가 mount될 때 이 초기값이 사용됩니다.
-  const [formData, setFormData] = useState(getInitialFormData());
   const [routePath, setRoutePath] = useState(null);
+  const [routeSections, setRouteSections] = useState([]);
   const [showRouteMap, setShowRouteMap] = useState(false);
 
   const assignedVehicle = useMemo(() => 
@@ -1920,14 +1939,19 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
               sum = (data.routes[0].summary.distance / 1000);
               
               let path = [];
+              let secDists = [];
               data.routes[0].sections.forEach(sec => {
+                secDists.push(sec.distance / 1000);
                 sec.roads.forEach(road => {
                   for(let i=0; i<road.vertexes.length; i+=2) {
                      path.push({lng: road.vertexes[i], lat: road.vertexes[i+1]});
                   }
                 });
               });
-              if (active) setRoutePath(path);
+              if (active) {
+                setRoutePath(path);
+                setRouteSections(secDists);
+              }
               
               if (active && !formData.isManualDistance) {
                 const dist = parseFloat(sum.toFixed(1));
@@ -1948,13 +1972,19 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
           for (let i = 0; i < validPoints.length - 1; i++) {
             sum += calculateDistance(validPoints[i].lat, validPoints[i].lng, validPoints[i+1].lat, validPoints[i+1].lng) * 1.25;
           }
-          if (active) setRoutePath(null);
+          if (active) {
+            setRoutePath(null);
+            setRouteSections([]);
+          }
         } catch (err) {
           console.error('Navi API Error:', err);
           for (let i = 0; i < validPoints.length - 1; i++) {
             sum += calculateDistance(validPoints[i].lat, validPoints[i].lng, validPoints[i+1].lat, validPoints[i+1].lng) * 1.25;
           }
-          if (active) setRoutePath(null);
+          if (active) {
+            setRoutePath(null);
+            setRouteSections([]);
+          }
         }
       }
 
@@ -2493,6 +2523,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                  <RouteMapPreview 
                    routePath={routePath} 
                    waypoints={formData.waypoints.filter(p => p.lat && p.lng)}
+                   routeSections={routeSections}
                    onClose={() => setShowRouteMap(false)} 
                  />
                )}
