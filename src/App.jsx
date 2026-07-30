@@ -157,6 +157,54 @@ const formatOrgUnitLabel = (name) => {
   return name;
 };
 
+const RouteMapPreview = ({ routePath }) => {
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    if (!window.kakao || !window.kakao.maps || !mapRef.current || !routePath || routePath.length === 0) return;
+
+    kakao.maps.load(() => {
+      const mapOption = {
+        center: new kakao.maps.LatLng(routePath[0].lat, routePath[0].lng),
+        level: 3,
+        draggable: false,
+        scrollwheel: false,
+        disableDoubleClickZoom: true
+      };
+      
+      const map = new kakao.maps.Map(mapRef.current, mapOption);
+      
+      const linePath = routePath.map(p => new kakao.maps.LatLng(p.lat, p.lng));
+      
+      const polyline = new kakao.maps.Polyline({
+        path: linePath,
+        strokeWeight: 5,
+        strokeColor: '#5B5BD6',
+        strokeOpacity: 0.9,
+        strokeStyle: 'solid'
+      });
+      
+      polyline.setMap(map);
+      
+      const bounds = new kakao.maps.LatLngBounds();
+      linePath.forEach(p => bounds.extend(p));
+      map.setBounds(bounds, 32, 32, 32, 32);
+    });
+  }, [routePath]);
+
+  if (!routePath || routePath.length === 0) return null;
+
+  return (
+    <div className="w-full h-[180px] rounded-[16px] overflow-hidden border border-slate-200 mt-4 relative shadow-sm">
+      <div ref={mapRef} className="w-full h-full bg-slate-50" />
+      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-sm border border-slate-200/60 z-10 flex items-center gap-2">
+         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+         <span className="text-[10px] font-black tracking-widest text-slate-700">카카오내비 실제 경로</span>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -1743,6 +1791,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
 
   // key prop 덕분에 component가 mount될 때 이 초기값이 사용됩니다.
   const [formData, setFormData] = useState(getInitialFormData());
+  const [routePath, setRoutePath] = useState(null);
 
   const assignedVehicle = useMemo(() => 
     corVehicles?.find(v => v.assignedUser === profile?.uid),
@@ -1806,6 +1855,17 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
               if (data.routes && data.routes.length > 0) {
                 // Kakao Mobility API returns distance in meters
                 sum += (data.routes[0].summary.distance / 1000);
+                
+                // Extract route path for visualization
+                let path = [];
+                data.routes[0].sections.forEach(sec => {
+                  sec.roads.forEach(road => {
+                    for(let i=0; i<road.vertexes.length; i+=2) {
+                       path.push({lng: road.vertexes[i], lat: road.vertexes[i+1]});
+                    }
+                  });
+                });
+                if (active) setRoutePath(path);
               } else {
                 // Fallback if no route found
                 sum += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng) * 1.25;
@@ -1813,10 +1873,12 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             } else {
               // Fallback if API fails (e.g. rate limit or network error)
               sum += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng) * 1.25;
+              if (active) setRoutePath(null);
             }
           } catch (err) {
             console.error('Navi API Error:', err);
             sum += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng) * 1.25;
+            if (active) setRoutePath(null);
           }
         }
       }
@@ -2327,7 +2389,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                 <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">{formData.distance}</span>
                 <span className="text-base text-slate-400 font-bold">km</span>
               </div>
-              <p className="text-[10px] font-semibold text-slate-400 mt-1.5">시스템 자동 산요 (1.25배 보정)</p>
+              <p className="text-[10px] font-semibold text-slate-400 mt-1.5">{routePath ? '카카오내비 최적 경로 기준' : '시스템 자동 산출 (1.25배 보정)'}</p>
             </div>
             <div className="p-4 rounded-[14px] bg-premium-gradient shadow-lg text-white flex flex-col justify-between">
               <div>
@@ -2340,6 +2402,8 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
               </p>
             </div>
           </div>
+          {/* Route Map Preview */}
+          <RouteMapPreview routePath={routePath} />
         </div>
 
         {/* Section 5: 제출 버튼 */}
