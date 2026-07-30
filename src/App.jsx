@@ -449,6 +449,8 @@ const App = () => {
                   setIsNewUser(true);
                 }
               }
+            }, err => {
+              secureLog.error('userDocRef snapshot error:', err);
             });
           } else {
             const isMaster = isMasterAdmin(u.email);
@@ -2359,19 +2361,18 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             <div className="max-h-[350px] overflow-y-auto p-4 custom-scrollbar space-y-2 bg-white">
               {profile.savedLocations
                 .filter(loc => loc.name?.toLowerCase().includes(favSearch.toLowerCase()) || loc.address?.toLowerCase().includes(favSearch.toLowerCase()))
-                .map(loc => (
-                   <button 
-                      type="button"
-                      key={loc.id}
+                   <div 
+                      key={`${loc.id}-${mapIndex}`}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        console.log('[FAV-CLICK-RAW]', loc);
                         const idx = favSelectorIdx;
                         const a = loc.address || '';
                         const n = loc.name || '';
                         const lt = loc.lat || 37.5;
                         const ln = loc.lng || 127.0;
-                        console.log('[FAV-v3]', idx, a, n, lt, ln);
+                        console.log('[FAV-v4]', idx, a, n, lt, ln);
                         const wps = formData.waypoints.map((wp, i) => 
                           i === idx ? { ...wp, address: a, alias: n, lat: lt, lng: ln } : wp
                         );
@@ -2379,7 +2380,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                         setFavSelectorIdx(null);
                         setFavSearch('');
                       }}
-                      className="w-full flex items-center gap-4 p-5 rounded-[1.5rem] hover:bg-slate-50 transition-all text-left group border border-transparent hover:border-slate-100"
+                      className="w-full flex items-center gap-4 p-5 rounded-[1.5rem] hover:bg-slate-50 transition-all text-left group border border-transparent hover:border-slate-100 cursor-pointer"
                    >
                       <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
                         <MapPin size={20}/>
@@ -2389,7 +2390,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                         <span className="block text-[11px] font-bold text-slate-400 mt-1 truncate">{loc.address}</span>
                       </div>
                       <ChevronRight size={16} className="text-slate-200 group-hover:text-indigo-300 transition-all pr-1" />
-                   </button>
+                   </div>
                 ))
               }
               {profile.savedLocations.filter(loc => loc.name?.toLowerCase().includes(favSearch.toLowerCase()) || loc.address?.toLowerCase().includes(favSearch.toLowerCase())).length === 0 && (
