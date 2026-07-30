@@ -2364,7 +2364,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                 .map((loc, mapIndex) => (
                    <div 
                       key={`${loc.id}-${mapIndex}`}
-                      onClick={(e) => {
+                      onPointerDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         alert(`ITEM CLICKED: ${loc.name}`);
