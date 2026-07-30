@@ -1792,6 +1792,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
   // key prop 덕분에 component가 mount될 때 이 초기값이 사용됩니다.
   const [formData, setFormData] = useState(getInitialFormData());
   const [routePath, setRoutePath] = useState(null);
+  const [showRouteMap, setShowRouteMap] = useState(false);
 
   const assignedVehicle = useMemo(() => 
     corVehicles?.find(v => v.assignedUser === profile?.uid),
@@ -2403,7 +2404,22 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             </div>
           </div>
           {/* Route Map Preview */}
-          <RouteMapPreview routePath={routePath} />
+          {routePath && routePath.length > 0 && (
+            <div className="mt-4 flex flex-col items-center gap-3">
+               <button 
+                 type="button" 
+                 onClick={() => setShowRouteMap(!showRouteMap)}
+                 className="flex items-center justify-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-[14px] transition-all text-[13px] font-bold border border-slate-200 shadow-sm w-full"
+               >
+                 <MapPin size={16} className={showRouteMap ? "text-slate-400" : "text-[#5B5BD6]"} />
+                 {showRouteMap ? '지도 숨기기' : '실제 경로 지도 보기'}
+               </button>
+               
+               {showRouteMap && (
+                 <RouteMapPreview routePath={routePath} />
+               )}
+            </div>
+          )}
         </div>
 
         {/* Section 5: 제출 버튼 */}
