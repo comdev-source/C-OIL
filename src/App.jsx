@@ -1866,6 +1866,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
   const [favSearch, setFavSearch] = useState('');
 
   // key prop 덕분에 component가 mount될 때 이 초기값이 사용됩니다.
+  const [formData, setFormData] = useState(getInitialFormData());
   const [routePath, setRoutePath] = useState(null);
   const [routeSections, setRouteSections] = useState([]);
   const [showRouteMap, setShowRouteMap] = useState(false);
