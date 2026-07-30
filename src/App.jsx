@@ -161,6 +161,14 @@ const RouteMapPreview = ({ routePath, onClose }) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
+    // Prevent body scroll when map modal is open
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
+  useEffect(() => {
     if (!window.kakao || !window.kakao.maps || !mapRef.current || !routePath || routePath.length === 0) return;
 
     kakao.maps.load(() => {
@@ -195,7 +203,7 @@ const RouteMapPreview = ({ routePath, onClose }) => {
   if (!routePath || routePath.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-fade-in" onClick={onClose} style={{ touchAction: 'none' }}>
       <div className="bg-white w-full max-w-3xl h-[70vh] sm:h-[80vh] rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up flex flex-col relative border border-white/20" onClick={e => e.stopPropagation()}>
         
         {/* Header */}
@@ -215,11 +223,6 @@ const RouteMapPreview = ({ routePath, onClose }) => {
 
         {/* Map Container */}
         <div ref={mapRef} className="w-full h-full bg-slate-100" />
-        
-        {/* Helper text */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full shadow-lg z-20 pointer-events-none">
-          <span className="text-white/90 text-xs font-bold tracking-wide">지도를 드래그하여 경로를 확인할 수 있습니다</span>
-        </div>
       </div>
     </div>
   );
