@@ -1875,46 +1875,63 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
 
     const calcDistance = async () => {
       let sum = 0;
-      for (let i = 0; i < formData.waypoints.length - 1; i++) {
-        const p1 = formData.waypoints[i];
-        const p2 = formData.waypoints[i+1];
-        
-        if (p1.address && p2.address && p1.lat && p1.lng && p2.lat && p2.lng) {
-          try {
-            const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${p1.lng},${p1.lat}&destination=${p2.lng},${p2.lat}`;
-            const res = await fetch(url, {
-              headers: { Authorization: `KakaoAK a214653221ef501308f1f7ee529907d1` }
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if (data.routes && data.routes.length > 0) {
-                // Kakao Mobility API returns distance in meters
-                sum += (data.routes[0].summary.distance / 1000);
-                
-                // Extract route path for visualization
-                let path = [];
-                data.routes[0].sections.forEach(sec => {
-                  sec.roads.forEach(road => {
-                    for(let i=0; i<road.vertexes.length; i+=2) {
-                       path.push({lng: road.vertexes[i], lat: road.vertexes[i+1]});
-                    }
-                  });
-                });
-                if (active) setRoutePath(path);
-              } else {
-                // Fallback if no route found
-                sum += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng) * 1.25;
-              }
-            } else {
-              // Fallback if API fails (e.g. rate limit or network error)
-              sum += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng) * 1.25;
-              if (active) setRoutePath(null);
-            }
-          } catch (err) {
-            console.error('Navi API Error:', err);
-            sum += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng) * 1.25;
-            if (active) setRoutePath(null);
+      const validPoints = formData.waypoints.filter(p => p.address && p.lat && p.lng);
+
+      if (validPoints.length >= 2) {
+        try {
+          const origin = validPoints[0];
+          const dest = validPoints[validPoints.length - 1];
+          let waypointsParam = '';
+          if (validPoints.length > 2) {
+            waypointsParam = '&waypoints=' + validPoints.slice(1, -1).map(p => `${p.lng},${p.lat}`).join('|');
           }
+
+          const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.lng},${origin.lat}&destination=${dest.lng},${dest.lat}${waypointsParam}`;
+          const res = await fetch(url, {
+            headers: { Authorization: `KakaoAK a214653221ef501308f1f7ee529907d1` }
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.routes && data.routes.length > 0) {
+              sum = (data.routes[0].summary.distance / 1000);
+              
+              let path = [];
+              data.routes[0].sections.forEach(sec => {
+                sec.roads.forEach(road => {
+                  for(let i=0; i<road.vertexes.length; i+=2) {
+                     path.push({lng: road.vertexes[i], lat: road.vertexes[i+1]});
+                  }
+                });
+              });
+              if (active) setRoutePath(path);
+              
+              if (active && !formData.isManualDistance) {
+                const dist = parseFloat(sum.toFixed(1));
+                setFormData(prev => {
+                  if (prev.distance === dist) return prev;
+                  return { 
+                    ...prev, 
+                    distance: dist,
+                    odometerEnd: prev.isCorporate ? (prev.odometerStart + dist) : 0
+                  };
+                });
+              }
+              return;
+            }
+          }
+          
+          // Fallback if API fails or no routes
+          for (let i = 0; i < validPoints.length - 1; i++) {
+            sum += calculateDistance(validPoints[i].lat, validPoints[i].lng, validPoints[i+1].lat, validPoints[i+1].lng) * 1.25;
+          }
+          if (active) setRoutePath(null);
+        } catch (err) {
+          console.error('Navi API Error:', err);
+          for (let i = 0; i < validPoints.length - 1; i++) {
+            sum += calculateDistance(validPoints[i].lat, validPoints[i].lng, validPoints[i+1].lat, validPoints[i+1].lng) * 1.25;
+          }
+          if (active) setRoutePath(null);
         }
       }
 
