@@ -2361,6 +2361,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             <div className="max-h-[350px] overflow-y-auto p-4 custom-scrollbar space-y-2 bg-white">
               {profile.savedLocations
                 .filter(loc => loc.name?.toLowerCase().includes(favSearch.toLowerCase()) || loc.address?.toLowerCase().includes(favSearch.toLowerCase()))
+                .map((loc, mapIndex) => (
                    <div 
                       key={`${loc.id}-${mapIndex}`}
                       onClick={(e) => {
