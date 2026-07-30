@@ -157,7 +157,7 @@ const formatOrgUnitLabel = (name) => {
   return name;
 };
 
-const RouteMapPreview = ({ routePath, onClose }) => {
+const RouteMapPreview = ({ routePath, waypoints, onClose }) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -193,6 +193,29 @@ const RouteMapPreview = ({ routePath, onClose }) => {
       });
       
       polyline.setMap(map);
+      
+      if (waypoints && waypoints.length > 0) {
+        waypoints.forEach((wp, idx) => {
+          let label = "경유지";
+          if (idx === 0) label = "출발";
+          else if (idx === waypoints.length - 1) label = "도착";
+          else label = `경유${idx}`;
+
+          const pos = new kakao.maps.LatLng(wp.lat, wp.lng);
+          
+          // Marker
+          new kakao.maps.Marker({ map: map, position: pos });
+          
+          // Label Overlay
+          const content = `<div style="background-color: white; border: 2px solid #5B5BD6; color: #5B5BD6; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 900; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transform: translateY(-45px); white-space: nowrap;">${label}</div>`;
+          new kakao.maps.CustomOverlay({
+            map: map,
+            position: pos,
+            content: content,
+            yAnchor: 1
+          });
+        });
+      }
       
       const bounds = new kakao.maps.LatLngBounds();
       linePath.forEach(p => bounds.extend(p));
@@ -2467,7 +2490,11 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                </button>
                
                {showRouteMap && (
-                 <RouteMapPreview routePath={routePath} onClose={() => setShowRouteMap(false)} />
+                 <RouteMapPreview 
+                   routePath={routePath} 
+                   waypoints={formData.waypoints.filter(p => p.lat && p.lng)}
+                   onClose={() => setShowRouteMap(false)} 
+                 />
                )}
             </div>
           )}
