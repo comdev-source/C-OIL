@@ -157,7 +157,7 @@ const formatOrgUnitLabel = (name) => {
   return name;
 };
 
-const RouteMapPreview = ({ routePath }) => {
+const RouteMapPreview = ({ routePath, onClose }) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -167,9 +167,9 @@ const RouteMapPreview = ({ routePath }) => {
       const mapOption = {
         center: new kakao.maps.LatLng(routePath[0].lat, routePath[0].lng),
         level: 3,
-        draggable: false,
-        scrollwheel: false,
-        disableDoubleClickZoom: true
+        draggable: true,
+        scrollwheel: true,
+        disableDoubleClickZoom: false
       };
       
       const map = new kakao.maps.Map(mapRef.current, mapOption);
@@ -178,7 +178,7 @@ const RouteMapPreview = ({ routePath }) => {
       
       const polyline = new kakao.maps.Polyline({
         path: linePath,
-        strokeWeight: 5,
+        strokeWeight: 6,
         strokeColor: '#5B5BD6',
         strokeOpacity: 0.9,
         strokeStyle: 'solid'
@@ -188,18 +188,38 @@ const RouteMapPreview = ({ routePath }) => {
       
       const bounds = new kakao.maps.LatLngBounds();
       linePath.forEach(p => bounds.extend(p));
-      map.setBounds(bounds, 32, 32, 32, 32);
+      map.setBounds(bounds, 50, 50, 50, 50);
     });
   }, [routePath]);
 
   if (!routePath || routePath.length === 0) return null;
 
   return (
-    <div className="w-full h-[180px] rounded-[16px] overflow-hidden border border-slate-200 mt-4 relative shadow-sm">
-      <div ref={mapRef} className="w-full h-full bg-slate-50" />
-      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-sm border border-slate-200/60 z-10 flex items-center gap-2">
-         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-         <span className="text-[10px] font-black tracking-widest text-slate-700">카카오내비 실제 경로</span>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="bg-white w-full max-w-3xl h-[70vh] sm:h-[80vh] rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up flex flex-col relative border border-white/20" onClick={e => e.stopPropagation()}>
+        
+        {/* Header */}
+        <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
+          <div className="bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-lg border border-slate-200/60 flex items-center gap-2 pointer-events-auto">
+             <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+             <span className="text-[12px] font-black tracking-widest text-slate-800">카카오내비 실제 경로</span>
+          </div>
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-slate-100 rounded-2xl shadow-lg border border-slate-200/60 flex items-center justify-center transition-all pointer-events-auto"
+          >
+             <X size={20} className="text-slate-600" />
+          </button>
+        </div>
+
+        {/* Map Container */}
+        <div ref={mapRef} className="w-full h-full bg-slate-100" />
+        
+        {/* Helper text */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full shadow-lg z-20 pointer-events-none">
+          <span className="text-white/90 text-xs font-bold tracking-wide">지도를 드래그하여 경로를 확인할 수 있습니다</span>
+        </div>
       </div>
     </div>
   );
@@ -2408,15 +2428,15 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             <div className="mt-4 flex flex-col items-center gap-3">
                <button 
                  type="button" 
-                 onClick={() => setShowRouteMap(!showRouteMap)}
+                 onClick={() => setShowRouteMap(true)}
                  className="flex items-center justify-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-[14px] transition-all text-[13px] font-bold border border-slate-200 shadow-sm w-full"
                >
-                 <MapPin size={16} className={showRouteMap ? "text-slate-400" : "text-[#5B5BD6]"} />
-                 {showRouteMap ? '지도 숨기기' : '실제 경로 지도 보기'}
+                 <MapPin size={16} className="text-[#5B5BD6]" />
+                 실제 주행경로 지도 보기
                </button>
                
                {showRouteMap && (
-                 <RouteMapPreview routePath={routePath} />
+                 <RouteMapPreview routePath={routePath} onClose={() => setShowRouteMap(false)} />
                )}
             </div>
           )}
