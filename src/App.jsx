@@ -2365,7 +2365,22 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleQuickSelect(favSelectorIdx, loc);
+                        const targetIdx = favSelectorIdx;
+                        const addr = loc.address || '';
+                        const name = loc.name || '';
+                        const lat = loc.lat || 37.5;
+                        const lng = loc.lng || 127.0;
+                        setFormData(prev => {
+                          const newWaypoints = [...prev.waypoints];
+                          newWaypoints[targetIdx] = {
+                            ...newWaypoints[targetIdx],
+                            address: addr,
+                            alias: name,
+                            lat: lat,
+                            lng: lng
+                          };
+                          return { ...prev, waypoints: newWaypoints };
+                        });
                         setFavSelectorIdx(null);
                         setFavSearch('');
                       }}
