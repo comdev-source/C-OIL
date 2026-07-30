@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -2367,19 +2368,22 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                         e.stopPropagation();
                         const targetIdx = favSelectorIdx;
                         const addr = loc.address || '';
-                        const name = loc.name || '';
+                        const alias = loc.name || '';
                         const lat = loc.lat || 37.5;
                         const lng = loc.lng || 127.0;
-                        setFormData(prev => {
-                          const newWaypoints = [...prev.waypoints];
-                          newWaypoints[targetIdx] = {
-                            ...newWaypoints[targetIdx],
-                            address: addr,
-                            alias: name,
-                            lat: lat,
-                            lng: lng
-                          };
-                          return { ...prev, waypoints: newWaypoints };
+                        // flushSync로 강제 동기 업데이트 후 모달 닫기
+                        flushSync(() => {
+                          setFormData(prev => {
+                            const newWaypoints = [...prev.waypoints];
+                            newWaypoints[targetIdx] = {
+                              ...newWaypoints[targetIdx],
+                              address: addr,
+                              alias: alias,
+                              lat: lat,
+                              lng: lng
+                            };
+                            return { ...prev, waypoints: newWaypoints };
+                          });
                         });
                         setFavSelectorIdx(null);
                         setFavSearch('');
