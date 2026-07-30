@@ -200,11 +200,17 @@ const RouteMapPreview = ({ routePath, onClose }) => {
     });
   }, [routePath]);
 
+  const handleClose = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClose();
+  };
+
   if (!routePath || routePath.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-fade-in" onPointerDown={onClose} onClick={onClose} style={{ touchAction: 'none' }}>
-      <div className="bg-white w-full max-w-3xl h-[70dvh] sm:h-[80dvh] rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up flex flex-col relative border border-white/20 cursor-pointer" onPointerDown={onClose} onClick={onClose}>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-fade-in" onTouchStart={handleClose} onPointerDown={handleClose} onClick={handleClose} style={{ touchAction: 'none' }}>
+      <div className="bg-white w-full max-w-3xl h-[70dvh] sm:h-[80dvh] rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up flex flex-col relative border border-white/20 cursor-pointer" onTouchStart={handleClose} onPointerDown={handleClose} onClick={handleClose}>
         
         {/* Header */}
         <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
@@ -214,8 +220,9 @@ const RouteMapPreview = ({ routePath, onClose }) => {
           </div>
           <button 
             type="button" 
-            onPointerDown={e => { e.stopPropagation(); onClose(); }}
-            onClick={e => { e.stopPropagation(); onClose(); }} 
+            onTouchStart={handleClose}
+            onPointerDown={handleClose}
+            onClick={handleClose} 
             className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-slate-100 rounded-2xl shadow-lg border border-slate-200/60 flex items-center justify-center transition-all pointer-events-auto"
           >
              <X size={20} className="text-slate-600" />
@@ -223,10 +230,10 @@ const RouteMapPreview = ({ routePath, onClose }) => {
         </div>
 
         {/* Map Container */}
-        <div ref={mapRef} className="w-full h-full bg-slate-100" />
+        <div ref={mapRef} className="w-full h-full bg-slate-100 pointer-events-none" />
         
         {/* Invisible Overlay to capture all clicks and prevent map interaction */}
-        <div className="absolute inset-0 z-10 w-full h-full cursor-pointer" onPointerDown={onClose} onClick={onClose} />
+        <div className="absolute inset-0 z-10 w-full h-full cursor-pointer" onTouchStart={handleClose} onPointerDown={handleClose} onClick={handleClose} />
       </div>
     </div>
   );
