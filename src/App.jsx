@@ -12,7 +12,7 @@ import {
   confirmPasswordReset,
   verifyPasswordResetCode
 } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc, query, getDoc, updateDoc, orderBy, getDocs, writeBatch, where, or } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc, query, getDoc, updateDoc, orderBy, getDocs, writeBatch, where, or, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -111,6 +111,20 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 auth.languageCode = 'ko';
 const db = getFirestore(app);
+
+// 오프라인 캐싱 활성화
+try {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code == 'failed-precondition') {
+      console.warn("오프라인 캐싱 실패: 여러 탭이 열려 있습니다.");
+    } else if (err.code == 'unimplemented') {
+      console.warn("오프라인 캐싱을 지원하지 않는 브라우저입니다.");
+    }
+  });
+} catch (e) {
+  console.warn("오프라인 캐싱 초기화 오류", e);
+}
+
 const messaging = getMessaging(app);
 const appId = getSafeGlobal('__app_id', 'vehicle-fuel-tracker');
 

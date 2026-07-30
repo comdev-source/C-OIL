@@ -1,0 +1,34 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. 유류비 기록 (fuel_logs) 보안 규칙
+    // - 생성(create): 로그인한 사용자(request.auth != null)만 가능하며, 자기 자신의 uid로만 생성 가능
+    // - 읽기(read), 수정(update), 삭제(delete): 자신의 데이터만 접근 가능
+    match /fuel_logs/{logId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // 2. 법인 차량 (corporate_vehicles) 보안 규칙
+    // - 읽기(read): 로그인한 사용자는 모든 법인 차량 목록을 볼 수 있음 (할당용)
+    // - 쓰기(write): 현재는 일단 로그인된 사용자에게 열어둡니다.
+    match /corporate_vehicles/{vehicleId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // 3. 즐겨찾기 (favorites) 보안 규칙
+    // - 자신의 즐겨찾기만 접근 가능
+    match /favorites/{favoriteId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // 기본적으로 다른 모든 컬렉션은 접근 거부
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
