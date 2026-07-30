@@ -1785,25 +1785,59 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
     return fuelCost + totalParking;
   }, [formData.distance, formData.fuelType, fuelRates, formData.waypoints]);
 
-  // 거리 자동 계산 효과
+  // 거리 자동 계산 효과 (카카오내비 API 적용)
   useEffect(() => {
-    let sum = 0;
-    for (let i = 0; i < formData.waypoints.length - 1; i++) {
+    let active = true;
+
+    const calcDistance = async () => {
+      let sum = 0;
+      for (let i = 0; i < formData.waypoints.length - 1; i++) {
         const p1 = formData.waypoints[i];
         const p2 = formData.waypoints[i+1];
-        if (p1.address && p2.address) {
+        
+        if (p1.address && p2.address && p1.lat && p1.lng && p2.lat && p2.lng) {
+          try {
+            const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${p1.lng},${p1.lat}&destination=${p2.lng},${p2.lat}`;
+            const res = await fetch(url, {
+              headers: { Authorization: `KakaoAK a214653221ef501308f1f7ee529907d1` }
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.routes && data.routes.length > 0) {
+                // Kakao Mobility API returns distance in meters
+                sum += (data.routes[0].summary.distance / 1000);
+              } else {
+                // Fallback if no route found
+                sum += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng) * 1.25;
+              }
+            } else {
+              // Fallback if API fails (e.g. rate limit or network error)
+              sum += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng) * 1.25;
+            }
+          } catch (err) {
+            console.error('Navi API Error:', err);
             sum += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng) * 1.25;
+          }
         }
-    }
-    if (!formData.isManualDistance) {
-      const dist = parseFloat(sum.toFixed(1));
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFormData(prev => ({ 
-        ...prev, 
-        distance: dist,
-        odometerEnd: prev.isCorporate ? (prev.odometerStart + dist) : 0
-      }));
-    }
+      }
+
+      if (active && !formData.isManualDistance) {
+        const dist = parseFloat(sum.toFixed(1));
+        setFormData(prev => {
+          // 상태가 실제로 변경될 때만 업데이트하여 무한루프 방지
+          if (prev.distance === dist) return prev;
+          return { 
+            ...prev, 
+            distance: dist,
+            odometerEnd: prev.isCorporate ? (prev.odometerStart + dist) : 0
+          };
+        });
+      }
+    };
+
+    calcDistance();
+
+    return () => { active = false; };
   }, [formData.waypoints, formData.isManualDistance, formData.isCorporate, formData.odometerStart]);
 
   // 법인차량 선택 시 Odometer 시작값 자동 동기화
