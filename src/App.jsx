@@ -333,6 +333,28 @@ const App = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const isAdmin = useMemo(() => {
+    return profile?.role === 'admin' || isMasterAdmin(user?.email);
+  }, [profile, user]);
+
+  const [pendingRequests, setPendingRequests] = useState([]);
+
+  // 관리자 권한일 경우 전체 보정 대기 요청 건수 상시 모니터링 (필터 무관)
+  useEffect(() => {
+    if (!isAdmin) {
+      setPendingRequests([]);
+      return;
+    }
+    const q = query(
+      collection(db, 'artifacts', appId, 'public', 'data', 'logs'),
+      where('requestStatus', '==', 'pending')
+    );
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setPendingRequests(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, [isAdmin, db, appId]);
+
   // 프로필 로딩 시 필터 초기값 동기화 (기존 'all'에서 본인 데이터로)
   useEffect(() => {
     if (profile) {
@@ -713,7 +735,7 @@ const App = () => {
       }
 
       // 2. 권한별 데이터 범위 설정
-      if (profile.role === 'admin') {
+      if (isAdmin) {
         // 어드민: 부서/사용자 선택 가능
         if (selectedDept !== 'all') {
           constraints.push(where('department', '>=', selectedDept));
@@ -1279,7 +1301,6 @@ const App = () => {
     }
   };
 
-  const isAdmin = profile?.role === 'admin' || isMasterAdmin(user?.email); 
   const viewTitle = view === 'dashboard' ? '대시보드' : view === 'log' ? (editingLog ? '운행 수정' : '신규 운행') : view === 'history' ? '정산 내역' : view === 'commute' ? '동선 관리' : view === 'reports' ? '통계 리포트' : view === 'admin' ? '인사 관리' : view === 'orgchart' ? '조직도' : '내 프로필';
 
   return (
@@ -1326,7 +1347,7 @@ const App = () => {
             isCollapsed={isSidebarCollapsed}
             onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             setEditingLog={setEditingLog}
-            pendingRequestsCount={logs.filter(log => log.requestStatus === 'pending').length}
+            pendingRequestsCount={pendingRequests.length}
             onExport={handleNativeExport}
             onImport={handleNativeImport}
           />
@@ -1456,7 +1477,7 @@ const App = () => {
             currentView={view} 
             onNavigate={(v) => { setView(v); setEditingLog(null); }} 
             onMenuToggle={() => setIsMobileMenuOpen(true)} 
-            pendingCount={logs.filter(log => log.requestStatus === 'pending').length}
+            pendingCount={pendingRequests.length}
             disabled={!profile?.vehicleName || !profile?.fuelType}
           />
 
@@ -1468,7 +1489,7 @@ const App = () => {
             onLogout={logout}
             isAdmin={isAdmin}
             userProfile={profile}
-            pendingCount={logs.filter(log => log.requestStatus === 'pending').length}
+            pendingCount={pendingRequests.length}
           />
         </div>
       )}
@@ -4499,10 +4520,6 @@ const InputLabel = ({ label }) => (
 
     return () => unsubscribe();
   }, [db, appId]);
-
-  const pendingRequests = useMemo(() => {
-    return logs.filter(log => log.requestStatus === 'pending');
-  }, [logs]);
 
   const updateUser = async (uid, updates) => {
     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', uid), updates);
