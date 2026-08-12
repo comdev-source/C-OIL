@@ -736,11 +736,7 @@ const App = () => {
 
       // 2. 권한별 데이터 범위 설정
       if (isAdmin) {
-        // 어드민: 부서/사용자 선택 가능
-        if (selectedDept !== 'all') {
-          constraints.push(where('department', '>=', selectedDept));
-          constraints.push(where('department', '<=', selectedDept + '\uf8ff'));
-        }
+        // 어드민: 전사 데이터 조회가 가능하며, 부서/사용자 정밀 필터링은 메모리에서 처리
         if (selectedMember !== 'all') {
           constraints.push(where('userName', '==', selectedMember));
         }
@@ -5154,11 +5150,16 @@ const ManagementReport = ({ logs, users, db, appId, filters, onFilterChange, cor
       if (log.isCommute) return false;
 
       const user = users.find(u => u.uid === log.userId);
-      // [FIX] 로그 기록 당시의 부서를 우선하고, 없으면 현재 유저 부서 참조 (정산 내역과 로직 통일)
-      const logDept = (log.department || user?.department || '미지정').trim();
-      const targetDept = (filters.department || filters.dept || "").trim();
+      const rawLogDept = (log.department || user?.department || '미지정').trim();
+      const rawTargetDept = (filters.department || filters.dept || "").trim();
       
-      const matchDept = targetDept === 'all' || (logDept && logDept.startsWith(targetDept));
+      const cleanLogDept = rawLogDept.replace(/^(\(주\)컴포즈커피|\(주\) 컴포즈커피)\s*>\s*/, '');
+      const cleanTargetDept = rawTargetDept.replace(/^(\(주\)컴포즈커피|\(주\) 컴포즈커피)\s*>\s*/, '');
+      
+      const matchDept = rawTargetDept === 'all' || cleanTargetDept === 'all' || 
+                        cleanLogDept.startsWith(cleanTargetDept) || 
+                        cleanTargetDept.startsWith(cleanLogDept) ||
+                        rawLogDept.startsWith(rawTargetDept);
       const matchUser = filters.userId === 'all' || log.userId === filters.userId;
       const matchStart = !filters.startDate || log.date >= filters.startDate;
       const matchEnd = !filters.endDate || log.date <= filters.endDate;
