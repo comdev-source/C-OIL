@@ -171,16 +171,17 @@ const formatOrgUnitLabel = (name) => {
   return name;
 };
 
-const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose }) => {
+const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose, isModal = true }) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
     // Prevent body scroll when map modal is open
+    if (!isModal) return;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'auto';
     };
-  }, []);
+  }, [isModal]);
 
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps || !mapRef.current || !routePath || routePath.length === 0) return;
@@ -217,10 +218,7 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose }) => {
 
           const pos = new kakao.maps.LatLng(wp.lat, wp.lng);
           
-          // Marker
           new kakao.maps.Marker({ map: map, position: pos });
-          
-          // Label Overlay
           const content = `<div style="background-color: white; border: 2px solid #5B5BD6; color: #5B5BD6; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 900; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transform: translateY(-45px); white-space: nowrap;">${label}</div>`;
           new kakao.maps.CustomOverlay({
             map: map,
@@ -230,30 +228,30 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose }) => {
           });
         });
       }
-      
-      const bounds = new kakao.maps.LatLngBounds();
-      linePath.forEach(p => bounds.extend(p));
-      map.setBounds(bounds, 50, 50, 50, 50);
     });
-  }, [routePath]);
+  }, [routePath, waypoints]);
 
   const handleClose = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onClose();
+    if (onClose) {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+    }
   };
 
-  if (!routePath || routePath.length === 0) return null;
+  if ((!routePath || routePath.length === 0) && (!waypoints || waypoints.length < 2)) return null;
+  
+  const isFallback = !routePath || routePath.length === 0;
 
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-fade-in" onTouchStart={handleClose} onPointerDown={handleClose} onClick={handleClose} style={{ touchAction: 'none' }}>
-      <div className="bg-white w-full max-w-3xl h-[70dvh] sm:h-[80dvh] rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up flex flex-col relative border border-white/20 cursor-pointer" onTouchStart={handleClose} onPointerDown={handleClose} onClick={handleClose}>
-        
-        {/* Header */}
+  const content = (
+    <>
+      {isModal && (
         <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
           <div className="bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-lg border border-slate-200/60 flex items-center gap-2 pointer-events-auto">
-             <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-             <span className="text-[12px] font-black tracking-widest text-slate-800">카카오내비 실제 경로</span>
+             <div className={`w-2 h-2 rounded-full ${isFallback ? 'bg-slate-400' : 'bg-indigo-500 animate-pulse'}`}></div>
+             <span className="text-[12px] font-black tracking-widest text-slate-800">
+               {isFallback ? '경유지 직선 연결 (실제 경로 미저장)' : '카카오내비 실제 경로'}
+             </span>
           </div>
           <button 
             type="button" 
@@ -265,32 +263,56 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose }) => {
              <X size={20} className="text-slate-600" />
           </button>
         </div>
-
-        {/* Map Container */}
-        <div ref={mapRef} className="w-full h-full bg-slate-100 pointer-events-none" />
-        
-        {/* Route Sections Summary */}
-        {waypoints && routeSections && routeSections.length > 0 && (
-          <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none">
-            <div className="bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-slate-700/50 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-              {waypoints.map((wp, idx) => (
-                <React.Fragment key={idx}>
-                  <span className="text-white/95 text-[12px] font-bold tracking-tight">{idx === 0 ? '출발' : (idx === waypoints.length - 1 ? '도착' : `경유${idx}`)}</span>
-                  {idx < waypoints.length - 1 && routeSections[idx] !== undefined && (
-                    <div className="flex items-center gap-1 text-slate-400">
-                       <span className="text-[10px] text-indigo-300 font-bold bg-indigo-500/20 px-1.5 py-0.5 rounded-md border border-indigo-500/30 shadow-sm">{routeSections[idx].toFixed(1)}km</span>
-                       <span className="text-[10px] text-slate-500">➔</span>
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+      )}
+      {!isModal && (
+        <div className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-sm text-[10px] font-black text-indigo-600 flex items-center gap-1.5 border border-indigo-100 pointer-events-auto">
+           <div className={`w-1.5 h-1.5 rounded-full ${isFallback ? 'bg-slate-400' : 'bg-indigo-500 animate-pulse'}`}></div>
+           {isFallback ? '경유지 직선 연결' : '카카오내비 실제 경로'}
+        </div>
+      )}
+      
+      {/* Route Sections Summary */}
+      {isModal && waypoints && routeSections && routeSections.length > 0 && (
+        <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none">
+          <div className="bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-slate-700/50 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            {waypoints.map((wp, idx) => (
+              <React.Fragment key={idx}>
+                <span className="text-white/95 text-[12px] font-bold tracking-tight">{idx === 0 ? '출발' : (idx === waypoints.length - 1 ? '도착' : `경유${idx}`)}</span>
+                {idx < waypoints.length - 1 && routeSections[idx] !== undefined && (
+                  <div className="flex items-center gap-1 text-slate-400">
+                     <span className="text-[10px] text-indigo-300 font-bold bg-indigo-500/20 px-1.5 py-0.5 rounded-md border border-indigo-500/30 shadow-sm">{routeSections[idx].toFixed(1)}km</span>
+                     <span className="text-[10px] text-slate-500">➔</span>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
           </div>
-        )}
-        
-        {/* Invisible Overlay to capture all clicks and prevent map interaction */}
+        </div>
+      )}
+
+      {/* Map Container */}
+      <div ref={mapRef} className={`w-full h-full bg-slate-100 ${isModal ? 'pointer-events-none' : ''}`} />
+      
+      {/* Invisible Overlay to capture all clicks and prevent map interaction for Modals */}
+      {isModal && (
         <div className="absolute inset-0 z-10 w-full h-full cursor-pointer" onTouchStart={handleClose} onPointerDown={handleClose} onClick={handleClose} />
+      )}
+    </>
+  );
+
+  if (isModal) {
+    return (
+      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-fade-in" onTouchStart={handleClose} onPointerDown={handleClose} onClick={handleClose} style={{ touchAction: 'none' }}>
+        <div className="bg-white w-full max-w-3xl h-[70dvh] sm:h-[80dvh] rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up flex flex-col relative border border-white/20 cursor-pointer" onTouchStart={handleClose} onPointerDown={handleClose} onClick={handleClose}>
+          {content}
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-[200px] sm:h-[250px] rounded-2xl overflow-hidden relative bg-slate-100 border border-slate-200 shadow-sm mt-4 animate-fade-in">
+      {content}
     </div>
   );
 };
@@ -2540,25 +2562,17 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             </div>
           </div>
           {/* Route Map Preview */}
-          {routePath && routePath.length > 0 && (
-            <div className="mt-4 flex flex-col items-center gap-3">
-               <button 
-                 type="button" 
-                 onClick={() => setShowRouteMap(true)}
-                 className="flex items-center justify-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-[14px] transition-all text-[13px] font-bold border border-slate-200 shadow-sm w-full"
-               >
-                 <MapPin size={16} className="text-[#5B5BD6]" />
-                 실제 주행경로 지도 보기
-               </button>
-               
-               {showRouteMap && (
-                 <RouteMapPreview 
-                   routePath={routePath} 
-                   waypoints={formData.waypoints.filter(p => p.lat && p.lng)}
-                   routeSections={routeSections}
-                   onClose={() => setShowRouteMap(false)} 
-                 />
-               )}
+          {(routePath && routePath.length > 0) ? (
+            <RouteMapPreview 
+              routePath={routePath} 
+              waypoints={formData.waypoints.filter(p => p.lat && p.lng)}
+              routeSections={routeSections}
+              isModal={false}
+            />
+          ) : (
+            <div className="w-full h-[120px] rounded-2xl mt-4 bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
+              <MapPin size={24} className="mb-2 opacity-30" />
+              <span className="text-xs font-bold opacity-50">출발지와 도착지를 입력하면 지도가 나타납니다</span>
             </div>
           )}
         </div>
