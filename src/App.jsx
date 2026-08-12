@@ -4782,6 +4782,17 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
     return root;
   }, [orgUnits, users, showDisabledMembers]);
 
+  const getDeptTotalMembersCount = (node) => {
+    if (!node) return 0;
+    let total = node.members ? node.members.length : 0;
+    if (node.children) {
+      Object.values(node.children).forEach(child => {
+        total += getDeptTotalMembersCount(child);
+      });
+    }
+    return total;
+  };
+
   const [selectedPath, setSelectedPath] = useState([]);
   
   const updateOrgUnitsRemote = async (newUnits) => {
