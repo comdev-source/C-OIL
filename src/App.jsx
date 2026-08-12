@@ -2628,20 +2628,15 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
               </p>
             </div>
           </div>
-          {/* Route Map Preview */}
-          {(formData.waypoints.filter(p => p.lat && p.lng).length >= 2) ? (
-            <RouteMapPreview 
-              routePath={routePath} 
-              waypoints={formData.waypoints.filter(p => p.lat && p.lng)}
-              routeSections={routeSections}
-              isModal={false}
-            />
-          ) : (
-            <div className="w-full h-[120px] rounded-2xl mt-4 bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
-              <MapPin size={24} className="mb-2 opacity-30" />
-              <span className="text-xs font-bold opacity-50">출발지와 도착지를 입력하면 지도가 나타납니다</span>
-            </div>
-          )}
+          {/* Route Map Button */}
+          <button
+            type="button"
+            onClick={() => setShowRouteMap(true)}
+            className="w-full h-[52px] rounded-2xl mt-4 bg-slate-50 border border-slate-200 flex items-center justify-center gap-2 text-slate-600 font-bold hover:bg-slate-100 transition-all shadow-sm"
+          >
+            <MapPin size={18} className="text-indigo-500" />
+            <span>지도 보기</span>
+          </button>
         </div>
 
         {/* Section 5: 제출 버튼 */}
@@ -2738,6 +2733,35 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                    <p className="font-black text-slate-300 tracking-tight">검색 결과가 없습니다.</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Map Modal */}
+      {showRouteMap && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in" onClick={() => setShowRouteMap(false)}>
+          <div className="bg-white w-full max-w-2xl h-[70vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-slide-up border border-white/20" onClick={e => e.stopPropagation()}>
+            <div className="p-4 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                <MapPin size={20} className="text-indigo-500" />
+                경로 지도 보기
+              </h3>
+              <button 
+                onClick={() => setShowRouteMap(false)}
+                className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all shadow-sm border border-slate-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 w-full bg-slate-100 relative">
+              <RouteMapPreview 
+                routePath={routePath} 
+                waypoints={formData.waypoints.filter(p => p.lat && p.lng)}
+                routeSections={routeSections}
+                onClose={() => setShowRouteMap(false)}
+                isModal={true}
+              />
             </div>
           </div>
         </div>
