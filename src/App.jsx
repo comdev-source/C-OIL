@@ -2801,9 +2801,9 @@ const HistoryTable = ({ logs, onDelete, isAdmin, onRequestCorrection, onEdit, pr
       const logDept = (log.department || logUser?.department || "").trim();
       const targetDept = (selectedDept || "").trim();
 
-      // [FIX] 부서 필터링을 계층형(startsWith)으로 변경하여 하위 부서 포함 가능하게 함
-      const matchDept = !showFilters || selectedDept === 'all' || (logDept && logDept.startsWith(targetDept));
-      const matchMember = !showFilters || selectedMember === 'all' || log.userName === selectedMember;
+      // [FIX] 부서 필터링을 계층형이 불완전할 경우를 대비해 includes로 유연하게 처리
+      const matchDept = !showFilters || selectedDept === 'all' || (logDept && logDept.includes(targetDept));
+      const matchMember = !showFilters || selectedMember === 'all' || (log.userName && log.userName.includes(selectedMember));
       
       return matchMonth && matchDate && matchDept && matchMember;
     });
