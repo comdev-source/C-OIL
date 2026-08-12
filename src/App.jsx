@@ -4747,7 +4747,9 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
   const tree = useMemo(() => {
     const root = { name: 'Root', fullPath: '', children: {}, members: [] };
     orgUnits.forEach(unit => {
-      const parts = unit.split(' > ');
+      const cleanUnit = unit.replace(/^(\(주\)컴포즈커피|\(주\) 컴포즈커피)\s*>\s*/, '').trim();
+      if (!cleanUnit || cleanUnit === '(주)컴포즈커피') return;
+      const parts = cleanUnit.split(' > ');
       let current = root;
       let path = '';
       parts.forEach((part) => {
@@ -4760,18 +4762,22 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
     });
     users.forEach(u => {
       if (!u.department || u.department === '미지정') return;
-      // 조직도 트리에서는 일단 상태와 무관하게 표시하거나, 여기도 필터링을 원할 수도 있지만 보통 조직도에는 현재 인원만 표시하는 경우가 많음. 
-      // 하지만 명부 필터링이 주 요청이므로 명부 위주로 처리함.
       if (!showDisabledMembers && u.status === 'disabled') return;
 
-      const parts = u.department.split(' > ');
+      const cleanDept = u.department.replace(/^(\(주\)컴포즈커피|\(주\) 컴포즈커피)\s*>\s*/, '').trim();
+      const parts = cleanDept.split(' > ');
       let current = root;
       let found = true;
       parts.forEach(part => {
-        if (current.children[part]) current = current.children[part];
-        else found = false;
+        if (current.children[part]) {
+          current = current.children[part];
+        } else {
+          found = false;
+        }
       });
-      if (found) current.members.push(u);
+      if (found) {
+        current.members.push(u);
+      }
     });
     return root;
   }, [orgUnits, users, showDisabledMembers]);
