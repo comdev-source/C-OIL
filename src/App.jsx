@@ -1794,6 +1794,7 @@ const EmptyChart = ({ message }) => (
     <p className="empty-state-desc">{message}</p>
   </div>
 );
+const kakaoRouteCache = {};
 
 const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVehicles }) => {
   // --- Helper: Robust Data Reconstruction ---
@@ -1930,8 +1931,8 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
 
   // key prop 덕분에 component가 mount될 때 이 초기값이 사용됩니다.
   const [formData, setFormData] = useState(getInitialFormData());
-  const [routePath, setRoutePath] = useState(null);
-  const [routeSections, setRouteSections] = useState([]);
+  const [routePath, setRoutePath] = useState(initialData.routePath || null);
+  const [routeSections, setRouteSections] = useState(initialData.routeSections || []);
   const [showRouteMap, setShowRouteMap] = useState(false);
 
   const assignedVehicle = useMemo(() => 
@@ -1992,6 +1993,32 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             throw new Error('Same origin and destination');
           }
 
+          const cacheKey = validPoints.map(p => `${p.lng},${p.lat}`).join('|');
+          
+          // Check if we already have routePath in initialData for this exact waypoint combination
+          // Or if we already fetched it in this session
+          if (kakaoRouteCache[cacheKey]) {
+            const cached = kakaoRouteCache[cacheKey];
+            sum = cached.sum;
+            if (active) {
+              setRoutePath(cached.path);
+              setRouteSections(cached.secDists);
+              
+              if (!formData.isManualDistance) {
+                const dist = parseFloat(sum.toFixed(1));
+                setFormData(prev => {
+                  if (prev.distance === dist) return prev;
+                  return { 
+                    ...prev, 
+                    distance: dist,
+                    odometerEnd: prev.isCorporate ? (prev.odometerStart + dist) : 0
+                  };
+                });
+              }
+            }
+            return;
+          }
+
           let waypointsParam = '';
           if (validPoints.length > 2) {
             waypointsParam = '&waypoints=' + validPoints.slice(1, -1).map(p => `${p.lng},${p.lat}`).join('|');
@@ -2017,6 +2044,9 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                   }
                 });
               });
+              
+              kakaoRouteCache[cacheKey] = { path, secDists, sum };
+              
               if (active) {
                 setRoutePath(path);
                 setRouteSections(secDists);
@@ -2295,7 +2325,9 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
           }
           return base + `] ${w.address}`;
         })
-        .join(' → ')
+        .join(' → '),
+      routePath: routePath,
+      routeSections: routeSections
     };
     
     onSave(payload);
