@@ -1466,7 +1466,7 @@ const App = () => {
                     isSearching={isSearching}
                   />
                 )}
-                {view === 'admin' && <AdminPanel db={db} appId={appId} orgUnits={orgUnits} setOrgUnits={setOrgUnits} logs={authorizedLogs} onApproveRequest={approveRequest} onRejectRequest={rejectRequest} fuelRates={fuelRates} onUpdateSettings={updateSettings} corVehicles={corVehicles} onExport={handleNativeExport} onImport={handleNativeImport} notificationSettings={notificationSettings} showStatus={showStatus} />}
+                {view === 'admin' && <AdminPanel db={db} appId={appId} orgUnits={orgUnits} setOrgUnits={setOrgUnits} logs={authorizedLogs} pendingRequests={pendingRequests} onApproveRequest={approveRequest} onRejectRequest={rejectRequest} fuelRates={fuelRates} onUpdateSettings={updateSettings} corVehicles={corVehicles} onExport={handleNativeExport} onImport={handleNativeImport} notificationSettings={notificationSettings} showStatus={showStatus} />}
                 {view === 'orgchart' && isAdmin && <OrgChartView orgUnits={orgUnits} users={allUsers} db={db} appId={appId} setOrgUnits={setOrgUnits} />}
                 {view === 'profile' && <MyPage profile={profile} onUpdate={updateProfile} showStatus={showStatus} onLogout={logout} />}
               </main>
@@ -4442,7 +4442,7 @@ const InputLabel = ({ label }) => (
   </label>
 );
 
-  const AdminPanel = ({ db, appId, orgUnits, setOrgUnits, logs, onApproveRequest, onRejectRequest, fuelRates, onUpdateSettings, corVehicles, onExport, onImport, notificationSettings, showStatus }) => {
+  const AdminPanel = ({ db, appId, orgUnits, setOrgUnits, logs, pendingRequests = [], onApproveRequest, onRejectRequest, fuelRates, onUpdateSettings, corVehicles, onExport, onImport, notificationSettings, showStatus }) => {
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('users');
   const [isMigrating, setIsMigrating] = useState(false);
