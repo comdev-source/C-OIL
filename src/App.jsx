@@ -184,11 +184,19 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose, isModal
   }, [isModal]);
 
   useEffect(() => {
-    if (!window.kakao || !window.kakao.maps || !mapRef.current || !routePath || routePath.length === 0) return;
+    if (!window.kakao || !window.kakao.maps || !mapRef.current) return;
+    
+    const hasRoute = routePath && routePath.length > 0;
+    const hasWaypoints = waypoints && waypoints.length >= 2;
+    
+    if (!hasRoute && !hasWaypoints) return;
 
     kakao.maps.load(() => {
+      const centerLat = hasRoute ? routePath[0].lat : waypoints[0].lat;
+      const centerLng = hasRoute ? routePath[0].lng : waypoints[0].lng;
+      
       const mapOption = {
-        center: new kakao.maps.LatLng(routePath[0].lat, routePath[0].lng),
+        center: new kakao.maps.LatLng(centerLat, centerLng),
         level: 3,
         draggable: false,
         scrollwheel: false,
@@ -197,14 +205,16 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose, isModal
       
       const map = new kakao.maps.Map(mapRef.current, mapOption);
       
-      const linePath = routePath.map(p => new kakao.maps.LatLng(p.lat, p.lng));
+      const linePath = hasRoute 
+        ? routePath.map(p => new kakao.maps.LatLng(p.lat, p.lng))
+        : waypoints.map(p => new kakao.maps.LatLng(p.lat, p.lng));
       
       const polyline = new kakao.maps.Polyline({
         path: linePath,
-        strokeWeight: 6,
-        strokeColor: '#5B5BD6',
-        strokeOpacity: 0.9,
-        strokeStyle: 'solid'
+        strokeWeight: hasRoute ? 6 : 4,
+        strokeColor: hasRoute ? '#5B5BD6' : '#94a3b8', // Indigo vs Slate
+        strokeOpacity: hasRoute ? 0.9 : 0.7,
+        strokeStyle: hasRoute ? 'solid' : 'dashed'
       });
       
       polyline.setMap(map);
@@ -2567,7 +2577,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             </div>
           </div>
           {/* Route Map Preview */}
-          {(routePath && routePath.length > 0) ? (
+          {(formData.waypoints.filter(p => p.lat && p.lng).length >= 2) ? (
             <RouteMapPreview 
               routePath={routePath} 
               waypoints={formData.waypoints.filter(p => p.lat && p.lng)}
