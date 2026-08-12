@@ -4908,6 +4908,27 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
                           </div>
                         )}
 
+                        {col.members.length > 0 && (
+                          <div className="pb-3 mb-3 border-b border-slate-100">
+                            <div className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-3 px-1 flex items-center gap-1.5">
+                              <Users size={12} /> 직속 구성원 ({col.members.length}명)
+                            </div>
+                            <div className="space-y-2">
+                              {col.members.map(m => (
+                                <div key={m.uid} className="flex items-center gap-3 p-3 bg-indigo-50/40 rounded-xl border border-indigo-100/60">
+                                   <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white font-black flex items-center justify-center text-xs shadow-sm">
+                                     {m.userName[0]}
+                                   </div>
+                                   <div className="min-w-0">
+                                     <div className="font-black text-slate-800 text-[12px]">{m.userName}</div>
+                                     <div className="text-[9px] font-bold text-slate-400 truncate tracking-tight">{m.email}</div>
+                                   </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {col.depts.map(dept => (
                           <div
                             key={dept.name}
@@ -4960,25 +4981,6 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
                              </div>
                           </div>
                         ))}
-
-                        {col.members.length > 0 && (
-                          <div className="pt-4 mt-4 border-t border-slate-50">
-                            <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-4 px-2">구성원 ({col.members.length})</div>
-                            <div className="space-y-2">
-                              {col.members.map(m => (
-                                <div key={m.uid} className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
-                                   <div className="w-8 h-8 rounded-lg bg-white text-indigo-500 font-black flex items-center justify-center text-xs shadow-sm border border-slate-100">
-                                     {m.userName[0]}
-                                   </div>
-                                   <div className="min-w-0">
-                                     <div className="font-black text-slate-700 text-[12px]">{m.userName}</div>
-                                     <div className="text-[9px] font-bold text-slate-400 truncate tracking-tight">{m.email}</div>
-                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                 ))}
