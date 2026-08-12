@@ -4523,6 +4523,24 @@ const InputLabel = ({ label }) => (
 
   const updateUser = async (uid, updates) => {
     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', uid), updates);
+
+    // 부서가 변경된 경우 해당 사용자의 모든 과거 운행 기록 부서도 새 소속으로 자동 동기화
+    if (updates.department !== undefined) {
+      try {
+        const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
+        const q = query(logsRef, where('userId', '==', uid));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const batch = writeBatch(db);
+          snap.docs.forEach(d => {
+            batch.update(d.ref, { department: updates.department });
+          });
+          await batch.commit();
+        }
+      } catch (err) {
+        console.error("과거 운행 기록 부서 동기화 오류:", err);
+      }
+    }
   };
 
   return (
