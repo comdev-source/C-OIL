@@ -2595,7 +2595,11 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
                 <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">{formData.distance}</span>
                 <span className="text-base text-slate-400 font-bold">km</span>
               </div>
-              <p className="text-[10px] font-semibold text-slate-400 mt-1.5">{routePath ? '카카오내비 최적 경로 기준' : '시스템 자동 산출 (1.25배 보정)'}</p>
+              <p className="text-[10px] font-semibold text-slate-400 mt-1.5">
+                {formData.distance > 0 
+                  ? (routePath ? '카카오내비 최적 경로 기준' : '시스템 자동 산출 (1.25배 보정)')
+                  : '출발지와 도착지를 입력해주세요'}
+              </p>
             </div>
             <div className="p-4 rounded-[14px] bg-premium-gradient shadow-lg text-white flex flex-col justify-between">
               <div>
