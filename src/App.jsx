@@ -220,16 +220,27 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose, isModal
       polyline.setMap(map);
       
       if (waypoints && waypoints.length > 0) {
+        let cumDist = 0;
         waypoints.forEach((wp, idx) => {
           let label = "경유지";
           if (idx === 0) label = "출발";
           else if (idx === waypoints.length - 1) label = "도착";
           else label = `경유${idx}`;
 
+          let distHtml = '';
+          if (idx > 0 && routeSections && routeSections.length >= idx) {
+             const secDist = routeSections[idx - 1];
+             cumDist += secDist;
+             distHtml = `<div style="font-size:10px; color:#64748b; margin-top:2px; font-weight:600; line-height: 1;">+${secDist.toFixed(1)}km (총 ${cumDist.toFixed(1)}km)</div>`;
+          }
+
           const pos = new kakao.maps.LatLng(wp.lat, wp.lng);
           
           new kakao.maps.Marker({ map: map, position: pos });
-          const content = `<div style="background-color: white; border: 2px solid #5B5BD6; color: #5B5BD6; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 900; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transform: translateY(-45px); white-space: nowrap;">${label}</div>`;
+          const content = `<div style="background-color: white; border: 2px solid #5B5BD6; color: #5B5BD6; padding: 6px 10px; border-radius: 12px; font-size: 12px; font-weight: 900; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-55px); white-space: nowrap; text-align: center;">
+            <div>${label}</div>
+            ${distHtml}
+          </div>`;
           new kakao.maps.CustomOverlay({
             map: map,
             position: pos,
@@ -2084,6 +2095,11 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             setRoutePath(null);
             setRouteSections([]);
           }
+        }
+      } else {
+        if (active) {
+          setRoutePath(null);
+          setRouteSections([]);
         }
       }
 
