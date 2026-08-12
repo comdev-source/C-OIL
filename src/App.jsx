@@ -1977,6 +1977,11 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
         try {
           const origin = validPoints[0];
           const dest = validPoints[validPoints.length - 1];
+          
+          if (validPoints.length === 2 && origin.lat === dest.lat && origin.lng === dest.lng) {
+            throw new Error('Same origin and destination');
+          }
+
           let waypointsParam = '';
           if (validPoints.length > 2) {
             waypointsParam = '&waypoints=' + validPoints.slice(1, -1).map(p => `${p.lng},${p.lat}`).join('|');
@@ -2031,7 +2036,7 @@ const LogEntryForm = ({ fuelRates, profile, onSave, initialData, isAdmin, corVeh
             setRouteSections([]);
           }
         } catch (err) {
-          console.error('Navi API Error:', err);
+          console.warn('Navi API Fallback:', err.message);
           for (let i = 0; i < validPoints.length - 1; i++) {
             sum += calculateDistance(validPoints[i].lat, validPoints[i].lng, validPoints[i+1].lat, validPoints[i+1].lng) * 1.25;
           }
