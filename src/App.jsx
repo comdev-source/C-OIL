@@ -198,9 +198,9 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose, isModal
       const mapOption = {
         center: new kakao.maps.LatLng(centerLat, centerLng),
         level: 3,
-        draggable: false,
-        scrollwheel: false,
-        disableDoubleClickZoom: true
+        draggable: isModal,
+        scrollwheel: isModal,
+        disableDoubleClickZoom: !isModal
       };
       
       const map = new kakao.maps.Map(mapRef.current, mapOption);
@@ -219,6 +219,9 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose, isModal
       
       polyline.setMap(map);
       
+      const bounds = new kakao.maps.LatLngBounds();
+      linePath.forEach(point => bounds.extend(point));
+      
       if (waypoints && waypoints.length > 0) {
         let cumDist = 0;
         waypoints.forEach((wp, idx) => {
@@ -235,6 +238,7 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose, isModal
           }
 
           const pos = new kakao.maps.LatLng(wp.lat, wp.lng);
+          bounds.extend(pos);
           
           new kakao.maps.Marker({ map: map, position: pos });
           const content = `<div style="background-color: white; border: 2px solid #5B5BD6; color: #5B5BD6; padding: 6px 10px; border-radius: 12px; font-size: 12px; font-weight: 900; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-55px); white-space: nowrap; text-align: center;">
@@ -249,6 +253,9 @@ const RouteMapPreview = ({ routePath, waypoints, routeSections, onClose, isModal
           });
         });
       }
+
+      // Add padding to bounds
+      map.setBounds(bounds, 50, 50, 50, 50);
     });
   }, [routePath, waypoints]);
 
