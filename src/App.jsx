@@ -4734,6 +4734,48 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
   const [activeTab, setActiveTab] = useState('chart'); // 'chart' or 'members'
   const [memberSearch, setMemberSearch] = useState('');
   const [showDisabledMembers, setShowDisabledMembers] = useState(false);
+  const [selectedUids, setSelectedUids] = useState(new Set());
+  const [bulkDept, setBulkDept] = useState('');
+
+  const handleBulkUpdate = async () => {
+    if (!bulkDept || selectedUids.size === 0) return;
+    if (!window.confirm(`선택한 ${selectedUids.size}명의 소속 부서를 '${bulkDept}'(으)로 일괄 변경하시겠습니까?`)) return;
+    
+    const promises = Array.from(selectedUids).map(uid => onUpdateUser(uid, { department: bulkDept }));
+    await Promise.all(promises);
+    setSelectedUids(new Set());
+    setBulkDept('');
+    alert('일괄 변경이 완료되었습니다.');
+  };
+
+  const downloadCSV = () => {
+    const headers = ['이름', '이메일', '소속 부서', '차량번호', '유종', '권한', '상태'];
+    const rows = users.filter(u => {
+      const matchesSearch = (u.userName || '').toLowerCase().includes(memberSearch.toLowerCase()) || 
+                            (u.department || '').toLowerCase().includes(memberSearch.toLowerCase());
+      const isVisible = showDisabledMembers || u.status !== 'disabled';
+      return matchesSearch && isVisible;
+    }).map(u => [
+      u.userName || '',
+      u.email || '',
+      u.department || '미지정',
+      u.regNo || '-',
+      u.fuelType === 'gasoline' ? '휘발유' : u.fuelType === 'diesel' ? '경유' : 'LPG',
+      u.role === 'admin' ? 'HR Admin' : u.role === 'manager' ? 'Leader' : 'Staff',
+      u.status === 'disabled' ? '사용 중지' : '정상 활동'
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + [headers, ...rows].map(e => e.join(",")).join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `구성원명부_${new Date().toLocaleDateString('sv-SE')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
@@ -4749,7 +4791,7 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
     orgUnits.forEach(unit => {
       const cleanUnit = unit.replace(/^(\(주\)컴포즈커피|\(주\) 컴포즈커피)\s*>\s*/, '').trim();
       if (!cleanUnit || cleanUnit === '(주)컴포즈커피') return;
-      const parts = cleanUnit.split(' > ');
+      const parts = cleanUnit.split(/\s*>\s*/);
       let current = root;
       let path = '';
       parts.forEach((part) => {
@@ -4765,12 +4807,15 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
       if (!showDisabledMembers && u.status === 'disabled') return;
 
       const cleanDept = u.department.replace(/^(\(주\)컴포즈커피|\(주\) 컴포즈커피)\s*>\s*/, '').trim();
-      const parts = cleanDept.split(' > ');
+      const parts = cleanDept.split(/\s*>\s*/).map(p => p.trim());
       let current = root;
       let found = true;
       parts.forEach(part => {
-        if (current.children[part]) {
-          current = current.children[part];
+        const normalizedPart = part.replace(/\s+/g, '');
+        const matchedKey = Object.keys(current.children).find(k => k.replace(/\s+/g, '') === normalizedPart);
+        
+        if (matchedKey) {
+          current = current.children[matchedKey];
         } else {
           found = false;
         }
@@ -4987,7 +5032,7 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
                                  <Network size={10} /> {Object.keys(dept.children).length}
                                </div>
                                <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-tight ${selectedPath[depth] === dept.name ? 'text-indigo-100' : 'text-slate-400'}`}>
-                                 <Users size={10} /> {dept.members.length}
+                                 <Users size={10} /> {getDeptTotalMembersCount(dept)}
                                </div>
                              </div>
                           </div>
@@ -5023,12 +5068,43 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
                       onChange={e => setMemberSearch(e.target.value)}
                    />
                 </div>
+                
+                {selectedUids.size > 0 && (
+                  <div className="flex items-center gap-2 animate-fade-in bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-2xl">
+                    <select 
+                      className="bg-white text-[11px] font-black px-3 py-2 rounded-xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-200 transition-all cursor-pointer text-indigo-700"
+                      value={bulkDept}
+                      onChange={(e) => setBulkDept(e.target.value)}
+                    >
+                      <option value="">일괄 변경할 부서 선택</option>
+                      {orgUnits.map(unit => <option key={unit} value={unit}>{formatOrgUnitLabel(unit)}</option>)}
+                      <option value="미지정">미지정</option>
+                    </select>
+                    <button 
+                      onClick={handleBulkUpdate}
+                      disabled={!bulkDept}
+                      className="px-3 py-2 bg-indigo-600 text-white text-[11px] font-black rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-sm"
+                    >
+                      적용 ({selectedUids.size}명)
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm cursor-pointer hover:bg-slate-50 transition-all" onClick={() => setShowDisabledMembers(!showDisabledMembers)}>
                   <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${showDisabledMembers ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>
                     {showDisabledMembers && <Check size={10} className="text-white" />}
                   </div>
                   <span className="text-[11px] font-black text-slate-500 whitespace-nowrap">퇴사자 포함</span>
                 </div>
+                
+                <button 
+                  onClick={downloadCSV}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 hover:bg-emerald-100 transition-all shadow-sm shrink-0"
+                >
+                  <Download size={14} />
+                  <span className="text-[11px] font-black whitespace-nowrap">엑셀 다운로드</span>
+                </button>
+                
                 <div className="bg-indigo-50 px-5 py-3 rounded-2xl border border-indigo-100 text-sm font-black text-indigo-600 shrink-0">
                   총 {filteredUsers.length}명
                 </div>
@@ -5038,6 +5114,28 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
              <table className="w-full text-left">
                <thead className="sticky top-0 bg-slate-50/80 backdrop-blur-md border-b border-slate-100 z-10">
                  <tr>
+                   <th className="px-6 py-5 w-12">
+                     <div 
+                       className="w-4 h-4 rounded border border-slate-300 flex items-center justify-center cursor-pointer hover:border-indigo-500 transition-all"
+                       onClick={() => {
+                         const sorted = filteredUsers
+                           .filter(u => 
+                             (u.userName || '').toLowerCase().includes(memberSearch.toLowerCase()) || 
+                             (u.department || '').toLowerCase().includes(memberSearch.toLowerCase())
+                           )
+                           .sort((a, b) => (a.userName || '').localeCompare(b.userName || ''));
+                         
+                         if (selectedUids.size === sorted.length && sorted.length > 0) {
+                           setSelectedUids(new Set());
+                         } else {
+                           setSelectedUids(new Set(sorted.map(u => u.uid)));
+                         }
+                       }}
+                     >
+                       {selectedUids.size > 0 && selectedUids.size === filteredUsers.filter(u => (u.userName || '').toLowerCase().includes(memberSearch.toLowerCase()) || (u.department || '').toLowerCase().includes(memberSearch.toLowerCase())).length && <Check size={10} className="text-indigo-600" />}
+                       {selectedUids.size > 0 && selectedUids.size !== filteredUsers.filter(u => (u.userName || '').toLowerCase().includes(memberSearch.toLowerCase()) || (u.department || '').toLowerCase().includes(memberSearch.toLowerCase())).length && <div className="w-2 h-0.5 bg-indigo-600 rounded-full" />}
+                     </div>
+                   </th>
                    <th className="px-8 py-5 text-[10px] font-black text-slate-300 uppercase tracking-widest">이름 / 계정</th>
                    <th className="px-8 py-5 text-[10px] font-black text-slate-300 uppercase tracking-widest">소속 부서</th>
                    <th className="px-8 py-5 text-[10px] font-black text-slate-300 uppercase tracking-widest">차량 / 유종</th>
@@ -5052,7 +5150,20 @@ const OrgChartView = ({ orgUnits, users, db, appId, setOrgUnits, onUpdateUser })
                      (u.department || '').toLowerCase().includes(memberSearch.toLowerCase())
                    )
                    .sort((a, b) => (a.userName || '').localeCompare(b.userName || '')).map(u => (
-                   <tr key={u.uid} className="hover:bg-indigo-50/30 transition-all group">
+                   <tr key={u.uid} className={`hover:bg-indigo-50/30 transition-all group ${selectedUids.has(u.uid) ? 'bg-indigo-50/20' : ''}`}>
+                     <td className="px-6 py-6 w-12">
+                       <div 
+                         className={`w-4 h-4 rounded flex items-center justify-center border transition-all cursor-pointer ${selectedUids.has(u.uid) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 group-hover:border-indigo-400'}`}
+                         onClick={() => {
+                           const newSet = new Set(selectedUids);
+                           if (newSet.has(u.uid)) newSet.delete(u.uid);
+                           else newSet.add(u.uid);
+                           setSelectedUids(newSet);
+                         }}
+                       >
+                         {selectedUids.has(u.uid) && <Check size={10} className="text-white" />}
+                       </div>
+                     </td>
                      <td className="px-8 py-6">
                        <div className="flex items-center gap-4">
                          <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center font-black group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
