@@ -2,7 +2,7 @@
   "name": "c-oil",
   "homepage": "https://comdev-source.github.io/C-OIL/",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
