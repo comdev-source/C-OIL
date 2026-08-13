@@ -827,9 +827,13 @@ const App = () => {
     
     const tripMonth = new Date().toISOString().slice(0, 7);
     const fetchRates = async () => {
-      const rateRef = doc(db, 'artifacts', appId, 'public', 'data', 'fuelRates', tripMonth);
-      const snap = await getDoc(rateRef);
-      if (snap.exists()) setFuelRates(snap.data());
+      try {
+        const rateRef = doc(db, 'artifacts', appId, 'public', 'data', 'fuelRates', tripMonth);
+        const snap = await getDoc(rateRef);
+        if (snap.exists()) setFuelRates(snap.data());
+      } catch (err) {
+        console.warn('Error fetching rates:', err.message);
+      }
     };
     fetchRates();
 
@@ -869,8 +873,12 @@ const App = () => {
   useEffect(() => {
     if (!profile) return;
     const fetchOrgUnits = async () => {
-      const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'orgUnits'));
-      if (snap.exists()) setOrgUnits(snap.data().units || []);
+      try {
+        const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'orgUnits'));
+        if (snap.exists()) setOrgUnits(snap.data().units || []);
+      } catch (err) {
+        console.warn('Error fetching org units:', err.message);
+      }
     };
     fetchOrgUnits();
   }, [profile]);
