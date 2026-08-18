@@ -4608,6 +4608,32 @@ const InputLabel = ({ label }) => (
     setIsMigrating(false);
   };
 
+  const handleCheckData = async () => {
+    try {
+      // Find the coffee UID
+      const profilesRef = collection(db, 'artifacts', appId, 'public', 'data', 'profiles');
+      const profileSnap = await getDocs(profilesRef);
+      let targetUid = null;
+      profileSnap.docs.forEach(doc => {
+        if (doc.data().email === 'jaehyeong323@composecoffee.co.kr') targetUid = doc.id;
+      });
+
+      if (!targetUid) {
+        alert("계정을 찾을 수 없습니다.");
+        return;
+      }
+
+      const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
+      const logSnap = await getDocs(query(logsRef, where('userId', '==', targetUid)));
+      
+      const dates = logSnap.docs.map(d => `${d.data().date} (${d.data().userName})`);
+      alert(`총 ${dates.length}건의 기록이 있습니다.\n\n날짜 및 저장된 이름:\n${dates.sort().join('\n')}`);
+    } catch (e) {
+      console.error(e);
+      alert("오류 발생: " + e.message);
+    }
+  };
+
   const handleMigrateDept = async () => {
     const targetPath = "경영지원본부 > 인사총무팀";
     if (!window.confirm("부서 데이터 구조를 재정비하시겠습니까?\n1. '(주)컴포즈커피 > ' 접두어 제거\n2. '인사팀' -> '경영지원본부 > 인사총무팀' 변경")) return;
@@ -4769,14 +4795,23 @@ const InputLabel = ({ label }) => (
           <div className="p-8 bg-amber-50 rounded-3xl border border-amber-100">
             <h4 className="font-black text-amber-800 mb-2">이재형님 계정 통합 (coffer → coffee)</h4>
             <p className="text-sm text-amber-700 font-medium mb-6">오타 계정에 작성된 모든 기록을 정상 계정으로 옮기고, 오타 계정 프로필은 삭제합니다.</p>
-            <button
-              onClick={handleMergeAccount}
-              disabled={isMigrating}
-              className={`px-8 py-4 rounded-2xl font-black text-sm shadow-lg transition-all flex items-center gap-3 ${isMigrating ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-amber-500 text-white hover:bg-amber-600 active:scale-95 shadow-amber-100'}`}
-            >
-              <RefreshCw size={18} className={isMigrating ? 'animate-spin' : ''} />
-              {isMigrating ? '처리 중...' : '계정 기록 병합 실행'}
-            </button>
+            <div className="flex gap-4">
+              <button
+                onClick={handleMergeAccount}
+                disabled={isMigrating}
+                className={`px-8 py-4 rounded-2xl font-black text-sm shadow-lg transition-all flex items-center gap-3 ${isMigrating ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-amber-500 text-white hover:bg-amber-600 active:scale-95 shadow-amber-100'}`}
+              >
+                <RefreshCw size={18} className={isMigrating ? 'animate-spin' : ''} />
+                {isMigrating ? '처리 중...' : '계정 기록 병합 실행'}
+              </button>
+              
+              <button
+                onClick={handleCheckData}
+                className="px-8 py-4 rounded-2xl font-black text-sm shadow-lg transition-all flex items-center gap-3 bg-blue-500 text-white hover:bg-blue-600 active:scale-95 shadow-blue-100"
+              >
+                <Search size={18} /> 데이터 보유 현황 확인
+              </button>
+            </div>
           </div>
         </div>
       )}
