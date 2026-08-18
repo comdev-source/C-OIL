@@ -2876,6 +2876,18 @@ const HistoryTable = ({ logs, onDelete, isAdmin, onRequestCorrection, onEdit, pr
     return { totalDist, totalAmount, totalParking, totalFuel };
   }, [filteredLogs]);
 
+  // 동일 일자, 동일 사용자의 중복 작성 여부 파악
+  const duplicateFlags = useMemo(() => {
+    const counts = {};
+    logs.forEach(log => {
+      if (!log.isCommute) {
+        const key = `${log.userId}_${log.date}`;
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [logs]);
+
   // 익일 자동 마감 판단: createdAt 다음날 00:00 이후 잠기는지 확인
   const isLogLocked = (log) => {
     if (isAdmin) return false; // 관리자는 언제나 수정 가능
@@ -3101,6 +3113,11 @@ const HistoryTable = ({ logs, onDelete, isAdmin, onRequestCorrection, onEdit, pr
                       <td className="px-8 py-7">
                         <div className="flex items-center gap-2">
                           <div className="font-black text-slate-900 text-sm whitespace-nowrap">{log.date}</div>
+                          {duplicateFlags[`${log.userId}_${log.date}`] > 1 && (
+                            <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-600 text-[8px] font-black px-1.5 py-0.5 rounded-md tracking-tight shrink-0 border border-rose-100">
+                              동일 일자 중복
+                            </span>
+                          )}
                           {locked && (
                             <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-600 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tight shrink-0">
                               <Lock size={8} />
@@ -3207,6 +3224,11 @@ const HistoryTable = ({ logs, onDelete, isAdmin, onRequestCorrection, onEdit, pr
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-black text-slate-900">{log.date}</span>
+                        {duplicateFlags[`${log.userId}_${log.date}`] > 1 && (
+                          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-600 text-[8px] font-black px-1.5 py-0.5 rounded-md tracking-tight shrink-0 border border-rose-100">
+                            동일 일자 중복
+                          </span>
+                        )}
                         {locked && <span className="bg-amber-50 text-amber-600 text-[9px] font-black px-2 py-0.5 rounded-lg inline-flex items-center gap-1"><Lock size={9} />마감</span>}
                         {isApproved && <span className="bg-emerald-50 text-emerald-600 text-[9px] font-black px-2 py-0.5 rounded-lg border border-emerald-100">보정 승인</span>}
                         {isPending && <span className="bg-blue-50 text-blue-600 text-[9px] font-black px-2 py-0.5 rounded-lg">검토 중</span>}
