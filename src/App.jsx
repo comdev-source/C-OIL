@@ -4591,11 +4591,23 @@ const InputLabel = ({ label }) => (
       let logUpdated = 0;
 
       logSnap.docs.forEach(d => {
+        let needsUpdate = false;
+        const updates = {};
+        
         if (d.data().userId !== targetUid) {
-          logBatch.update(d.ref, { 
-            userId: targetUid,
-            userEmail: 'jaehyeong323@composecoffee.co.kr'
-          });
+          updates.userId = targetUid;
+          updates.userEmail = 'jaehyeong323@composecoffee.co.kr';
+          needsUpdate = true;
+        }
+
+        // Fix the department string if it was recorded without the '>' separator
+        if (d.data().department === '운영본부 오픈지원팀') {
+          updates.department = '운영본부 > 오픈지원팀';
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          logBatch.update(d.ref, updates);
           logUpdated++;
         }
       });
@@ -4617,24 +4629,14 @@ const InputLabel = ({ label }) => (
 
   const handleCheckData = async () => {
     try {
-      // Find the coffee UID
-      const profilesRef = collection(db, 'artifacts', appId, 'public', 'data', 'profiles');
-      const profileSnap = await getDocs(profilesRef);
-      let targetUid = null;
-      profileSnap.docs.forEach(doc => {
-        if (doc.data().email === 'jaehyeong323@composecoffee.co.kr') targetUid = doc.id;
-      });
-
-      if (!targetUid) {
-        alert("계정을 찾을 수 없습니다.");
-        return;
-      }
-
       const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
-      const logSnap = await getDocs(query(logsRef, where('userId', '==', targetUid)));
+      const logSnap = await getDocs(query(logsRef, where('userName', '==', '임재형')));
       
-      const dates = logSnap.docs.map(d => `${d.data().date} (${d.data().userName})`);
-      alert(`총 ${dates.length}건의 기록이 있습니다.\n\n날짜 및 저장된 이름:\n${dates.sort().join('\n')}`);
+      const details = logSnap.docs.map(d => {
+        const data = d.data();
+        return `${data.date} | 부서: ${data.department} | uid: ${data.userId} | 금액: ${data.amount}`;
+      });
+      alert(`[임재형] 총 ${details.length}건의 기록이 있습니다.\n\n${details.sort().join('\n')}`);
     } catch (e) {
       console.error(e);
       alert("오류 발생: " + e.message);
