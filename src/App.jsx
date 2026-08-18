@@ -4564,7 +4564,7 @@ const InputLabel = ({ label }) => (
   const [isMigrating, setIsMigrating] = useState(false);
 
   const handleMergeAccount = async () => {
-    if (!window.confirm("jaehyeong323@composecoffer.co.kr 의 모든 운행 기록을 jaehyeong323@composecoffee.co.kr 로 병합하시겠습니까? (오타 계정은 삭제됩니다)")) return;
+    if (!window.confirm("임재형 님의 고립된 운행 기록(삭제된 오타 계정으로 작성된 기록)을 현재 정상 계정으로 모두 연결하시겠습니까?")) return;
     setIsMigrating(true);
     try {
       const profilesRef = collection(db, 'artifacts', appId, 'public', 'data', 'profiles');
@@ -4573,22 +4573,25 @@ const InputLabel = ({ label }) => (
       let wrongUid = null;
       profileSnap.docs.forEach(doc => {
         if (doc.data().email === 'jaehyeong323@composecoffee.co.kr') targetUid = doc.id;
+        // The typo profile might be already deleted, so we don't strictly require it
         if (doc.data().email === 'jaehyeong323@composecoffer.co.kr') wrongUid = doc.id;
       });
 
-      if (!targetUid || !wrongUid) {
-        showStatus("대상 계정이나 잘못된 계정을 찾을 수 없거나 이미 통합되었습니다.", "error");
+      if (!targetUid) {
+        showStatus("정상 계정(coffee)을 찾을 수 없습니다.", "error");
         setIsMigrating(false);
         return;
       }
 
+      // Find ALL logs for "임재형" and ensure they point to targetUid
       const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
-      const logSnap = await getDocs(logsRef);
+      const q = query(logsRef, where('userName', '==', '임재형'));
+      const logSnap = await getDocs(q);
       const logBatch = writeBatch(db);
       let logUpdated = 0;
 
       logSnap.docs.forEach(d => {
-        if (d.data().userId === wrongUid) {
+        if (d.data().userId !== targetUid) {
           logBatch.update(d.ref, { 
             userId: targetUid,
             userEmail: 'jaehyeong323@composecoffee.co.kr'
@@ -4598,9 +4601,13 @@ const InputLabel = ({ label }) => (
       });
 
       if (logUpdated > 0) await logBatch.commit();
-      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', wrongUid));
+      
+      // If the wrong profile still exists, delete it
+      if (wrongUid) {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', wrongUid));
+      }
 
-      showStatus(`계정 병합 완료! 총 ${logUpdated}건의 운행 기록이 이동되었습니다.`, "success");
+      showStatus(`계정 데이터 복구 및 병합 완료! 총 ${logUpdated}건의 고립된 운행 기록이 연결되었습니다.`, "success");
     } catch (err) {
       console.error(err);
       showStatus("병합 중 오류가 발생했습니다.", "error");
@@ -4793,8 +4800,8 @@ const InputLabel = ({ label }) => (
           </div>
           
           <div className="p-8 bg-amber-50 rounded-3xl border border-amber-100">
-            <h4 className="font-black text-amber-800 mb-2">이재형님 계정 통합 (coffer → coffee)</h4>
-            <p className="text-sm text-amber-700 font-medium mb-6">오타 계정에 작성된 모든 기록을 정상 계정으로 옮기고, 오타 계정 프로필은 삭제합니다.</p>
+            <h4 className="font-black text-amber-800 mb-2">이재형님 계정 데이터 복구 및 통합</h4>
+            <p className="text-sm text-amber-700 font-medium mb-6">오타 계정이 삭제되어 고립된 운행 기록들을 현재 정상 계정으로 모두 연결합니다.</p>
             <div className="flex gap-4">
               <button
                 onClick={handleMergeAccount}
@@ -4802,7 +4809,7 @@ const InputLabel = ({ label }) => (
                 className={`px-8 py-4 rounded-2xl font-black text-sm shadow-lg transition-all flex items-center gap-3 ${isMigrating ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-amber-500 text-white hover:bg-amber-600 active:scale-95 shadow-amber-100'}`}
               >
                 <RefreshCw size={18} className={isMigrating ? 'animate-spin' : ''} />
-                {isMigrating ? '처리 중...' : '계정 기록 병합 실행'}
+                {isMigrating ? '처리 중...' : '고립된 기록 연결 실행'}
               </button>
               
               <button
