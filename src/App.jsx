@@ -4601,8 +4601,9 @@ const InputLabel = ({ label }) => (
         }
 
         // Fix the department string if it was recorded without the '>' separator
-        if (d.data().department === '운영본부 오픈지원팀') {
-          updates.department = '운영본부 > 오픈지원팀';
+        const dept = d.data().department || "";
+        if (dept.includes('운영본부 오픈지원팀')) {
+          updates.department = dept.replace('운영본부 오픈지원팀', '운영본부 > 오픈지원팀');
           needsUpdate = true;
         }
 
