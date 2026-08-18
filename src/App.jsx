@@ -4563,6 +4563,51 @@ const InputLabel = ({ label }) => (
   const [activeTab, setActiveTab] = useState('users');
   const [isMigrating, setIsMigrating] = useState(false);
 
+  const handleMergeAccount = async () => {
+    if (!window.confirm("jaehyeong323@composecoffer.co.kr 의 모든 운행 기록을 jaehyeong323@composecoffee.co.kr 로 병합하시겠습니까? (오타 계정은 삭제됩니다)")) return;
+    setIsMigrating(true);
+    try {
+      const profilesRef = collection(db, 'artifacts', appId, 'public', 'data', 'profiles');
+      const profileSnap = await getDocs(profilesRef);
+      let targetUid = null;
+      let wrongUid = null;
+      profileSnap.docs.forEach(doc => {
+        if (doc.data().email === 'jaehyeong323@composecoffee.co.kr') targetUid = doc.id;
+        if (doc.data().email === 'jaehyeong323@composecoffer.co.kr') wrongUid = doc.id;
+      });
+
+      if (!targetUid || !wrongUid) {
+        showStatus("대상 계정이나 잘못된 계정을 찾을 수 없거나 이미 통합되었습니다.", "error");
+        setIsMigrating(false);
+        return;
+      }
+
+      const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
+      const logSnap = await getDocs(logsRef);
+      const logBatch = writeBatch(db);
+      let logUpdated = 0;
+
+      logSnap.docs.forEach(d => {
+        if (d.data().userId === wrongUid) {
+          logBatch.update(d.ref, { 
+            userId: targetUid,
+            userEmail: 'jaehyeong323@composecoffee.co.kr'
+          });
+          logUpdated++;
+        }
+      });
+
+      if (logUpdated > 0) await logBatch.commit();
+      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', wrongUid));
+
+      showStatus(`계정 병합 완료! 총 ${logUpdated}건의 운행 기록이 이동되었습니다.`, "success");
+    } catch (err) {
+      console.error(err);
+      showStatus("병합 중 오류가 발생했습니다.", "error");
+    }
+    setIsMigrating(false);
+  };
+
   const handleMigrateDept = async () => {
     const targetPath = "경영지원본부 > 인사총무팀";
     if (!window.confirm("부서 데이터 구조를 재정비하시겠습니까?\n1. '(주)컴포즈커피 > ' 접두어 제거\n2. '인사팀' -> '경영지원본부 > 인사총무팀' 변경")) return;
@@ -4705,32 +4750,36 @@ const InputLabel = ({ label }) => (
         >
           <Bell size={16} /> 알림 설정
         </button>
+        <button 
+          onClick={() => setActiveTab('migrate')}
+          className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-3 ${activeTab === 'migrate' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+        >
+          <RefreshCw size={16} /> 데이터 관리
+        </button>
       </div>
 
 
-      {/* [HIDDEN] 마이그레이션 UI 주석 처리
       {activeTab === 'migrate' && (
         <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8 animate-slide-up">
           <div>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight">부서 데이터 일괄 정리</h3>
-            <p className="text-sm font-bold text-slate-400 mt-2">과거 기록 중 특정 부서명을 일괄적으로 수정합니다.</p>
+            <h3 className="text-xl font-black text-slate-800 tracking-tight">긴급: 계정 데이터 병합</h3>
+            <p className="text-sm font-bold text-slate-400 mt-2">사용자가 실수로 생성한 오타 계정의 운행 기록을 정상 계정으로 합칩니다.</p>
           </div>
           
           <div className="p-8 bg-amber-50 rounded-3xl border border-amber-100">
-            <h4 className="font-black text-amber-800 mb-2">인사팀 → 인사총무팀 (강력한 정리)</h4>
-            <p className="text-sm text-amber-700 font-medium mb-6">'인사팀'이라는 단어가 포함된 모든 부서명(경로 포함)을 찾아 '인사총무팀'으로 변경합니다. 로그 기록뿐만 아니라 사용자 프로필의 부서 정보도 함께 수정됩니다.</p>
+            <h4 className="font-black text-amber-800 mb-2">이재형님 계정 통합 (coffer → coffee)</h4>
+            <p className="text-sm text-amber-700 font-medium mb-6">오타 계정에 작성된 모든 기록을 정상 계정으로 옮기고, 오타 계정 프로필은 삭제합니다.</p>
             <button
-              onClick={handleMigrateDept}
+              onClick={handleMergeAccount}
               disabled={isMigrating}
               className={`px-8 py-4 rounded-2xl font-black text-sm shadow-lg transition-all flex items-center gap-3 ${isMigrating ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-amber-500 text-white hover:bg-amber-600 active:scale-95 shadow-amber-100'}`}
             >
               <RefreshCw size={18} className={isMigrating ? 'animate-spin' : ''} />
-              {isMigrating ? '처리 중...' : '부서명 정리 실행 (강력)'}
+              {isMigrating ? '처리 중...' : '계정 기록 병합 실행'}
             </button>
           </div>
         </div>
       )}
-      */}
 
       {activeTab === 'users' && <OrgChartView orgUnits={orgUnits} users={users} db={db} appId={appId} setOrgUnits={setOrgUnits} onUpdateUser={updateUser} />}
       {activeTab === 'requests' && (
