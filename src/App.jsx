@@ -2909,7 +2909,8 @@ const HistoryTable = ({ logs, onDelete, isAdmin, onRequestCorrection, onEdit, pr
       {/* Header: Stats + Filters */}
       <div className="flex flex-col gap-3 mb-4">
         {/* Wrap Filters */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1">
           {/* Month */}
           <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm focus-within:ring-2 ring-indigo-50">
             <Calendar size={14} className="text-indigo-500 shrink-0" />
@@ -2978,7 +2979,19 @@ const HistoryTable = ({ logs, onDelete, isAdmin, onRequestCorrection, onEdit, pr
               </button>
             )}
           </div>
-
+          </div>
+          
+          {/* Search Button */}
+          {onSearch && (
+            <button 
+              onClick={() => onSearch()}
+              disabled={isSearching}
+              className={`bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-md transition-all whitespace-nowrap ${isSearching ? 'opacity-70 cursor-wait' : 'active:scale-95'}`}
+            >
+              <Search size={16} className={isSearching ? 'animate-spin' : ''} />
+              {isSearching ? '조회 중...' : '조회하기'}
+            </button>
+          )}
         </div>
 
         {/* Mini Stats Strip */}
