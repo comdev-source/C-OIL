@@ -4644,6 +4644,100 @@ const InputLabel = ({ label }) => (
     }
   };
 
+  const handleNormalizeDepartments = async () => {
+    if (!window.confirm("모든 조직명(설정, 프로필, 과거 기록)에 누락된 '>' 기호를 자동으로 일괄 추가하시겠습니까?")) return;
+    setIsMigrating(true);
+    try {
+      const normalize = (dept) => {
+        if (!dept) return dept;
+        let normalized = dept;
+        const parts = normalized.split(' > ');
+        const refinePart = (part) => {
+          let refined = part;
+          refined = refined.replace(/(\(주\)\s*컴포즈커피|\(주\)컴포즈커피)\s+(?=\S)/g, '$1 > ');
+          refined = refined.replace(/((?:본부|팀|실|센터|그룹|부|파트))\s+(?=\S)/g, '$1 > ');
+          return refined;
+        }
+        normalized = parts.map(refinePart).join(' > ');
+        normalized = normalized.replace(/\s*>\s*>\s*/g, ' > ');
+        normalized = normalized.replace(/\s*>\s*/g, ' > ');
+        return normalized;
+      };
+
+      // 1. 설정값 (orgUnits) 업데이트
+      const orgRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'orgUnits');
+      const orgSnap = await getDoc(orgRef);
+      let updatedOrgUnits = [];
+      let orgChanged = false;
+      
+      if (orgSnap.exists()) {
+        const currentOrgUnits = orgSnap.data().units || [];
+        updatedOrgUnits = currentOrgUnits.map(unit => {
+          const norm = normalize(unit);
+          if (norm !== unit) orgChanged = true;
+          return norm;
+        });
+        if (orgChanged) {
+          await updateDoc(orgRef, { units: updatedOrgUnits });
+          setOrgUnits(updatedOrgUnits);
+        }
+      }
+
+      // 2. 프로필 (profiles) 업데이트
+      const profilesRef = collection(db, 'artifacts', appId, 'public', 'data', 'profiles');
+      const profileSnap = await getDocs(profilesRef);
+      const profileBatch = writeBatch(db);
+      let profileUpdated = 0;
+
+      profileSnap.docs.forEach(d => {
+        const currentDept = d.data().department || "";
+        const norm = normalize(currentDept);
+        if (norm !== currentDept) {
+          profileBatch.update(d.ref, { department: norm });
+          profileUpdated++;
+        }
+      });
+      if (profileUpdated > 0) await profileBatch.commit();
+
+      // 3. 기록 (logs) 업데이트
+      const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
+      const logSnap = await getDocs(logsRef);
+      
+      let logUpdated = 0;
+      let logBatches = [writeBatch(db)];
+      let batchIndex = 0;
+      let opsInBatch = 0;
+
+      logSnap.docs.forEach(d => {
+        const currentDept = d.data().department || "";
+        const norm = normalize(currentDept);
+        if (norm !== currentDept) {
+          logBatches[batchIndex].update(d.ref, { department: norm });
+          logUpdated++;
+          opsInBatch++;
+          if (opsInBatch >= 400) {
+            logBatches.push(writeBatch(db));
+            batchIndex++;
+            opsInBatch = 0;
+          }
+        }
+      });
+      
+      if (logUpdated > 0) {
+        for (let i = 0; i <= batchIndex; i++) {
+          await logBatches[i].commit();
+        }
+      }
+
+      alert(`조직명 자동 표준화 완료!\n- 설정된 조직명: ${orgChanged ? '교정됨' : '변경 없음'}\n- 프로필 수정: ${profileUpdated}명\n- 과거 기록 수정: ${logUpdated}건`);
+    } catch (e) {
+      console.error(e);
+      alert("오류 발생: " + e.message);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   const handleMigrateDept = async () => {
     const targetPath = "경영지원본부 > 인사총무팀";
     if (!window.confirm("부서 데이터 구조를 재정비하시겠습니까?\n1. '(주)컴포즈커피 > ' 접두어 제거\n2. '인사팀' -> '경영지원본부 > 인사총무팀' 변경")) return;
@@ -4822,6 +4916,19 @@ const InputLabel = ({ label }) => (
                 <Search size={18} /> 데이터 보유 현황 확인
               </button>
             </div>
+          </div>
+
+          <div className="p-8 bg-indigo-50 rounded-3xl border border-indigo-100 mt-6">
+            <h4 className="font-black text-indigo-800 mb-2">조직명 전체 자동 표준화</h4>
+            <p className="text-sm text-indigo-700 font-medium mb-6">시스템 전반(부서 세팅, 사용자 프로필, 모든 과거 운행 기록)의 부서명에서 누락된 '&gt;' 기호를 자동으로 파악하여 일괄 교정합니다.</p>
+            <button
+              onClick={handleNormalizeDepartments}
+              disabled={isMigrating}
+              className={`px-8 py-4 rounded-2xl font-black text-sm shadow-lg transition-all flex items-center gap-3 ${isMigrating ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 shadow-indigo-200'}`}
+            >
+              <RefreshCw size={18} className={isMigrating ? 'animate-spin' : ''} />
+              {isMigrating ? '처리 중...' : '조직명 자동 표준화 (일괄 적용)'}
+            </button>
           </div>
         </div>
       )}
