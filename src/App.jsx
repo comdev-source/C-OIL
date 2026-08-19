@@ -2832,11 +2832,11 @@ const HistoryTable = ({ logs, onDelete, isAdmin, onRequestCorrection, onEdit, pr
     return logs.filter(log => log.date.startsWith(selectedMonth));
   }, [logs, selectedMonth]);
 
-  // 가용 부서 목록 추출
+  // 가용 부서 목록 추출 (normalize하여 중복 제거)
   const availableDepts = useMemo(() => {
     const depts = new Set();
     filteredByMonth.forEach(log => {
-      if (log.department) depts.add(log.department);
+      if (log.department) depts.add(normalizeDepartment(log.department));
     });
     return Array.from(depts).sort();
   }, [filteredByMonth]);
@@ -2844,9 +2844,11 @@ const HistoryTable = ({ logs, onDelete, isAdmin, onRequestCorrection, onEdit, pr
   // 가용 사용자 목록 추출
   const availableMembers = useMemo(() => {
     const mems = new Set();
+    const stripDept = (d) => (d || '').replace(/\s*>\s*/g, '').replace(/\s+/g, '');
     filteredByMonth.forEach(log => {
-      // [FIX] 부서 매칭 시 하위 부서까지 포함될 수 있도록 startsWith 사용
-      const isMatch = selectedDept === 'all' || (log.department && log.department.startsWith(selectedDept));
+      const logDeptStripped = stripDept(log.department);
+      const selectedDeptStripped = stripDept(selectedDept);
+      const isMatch = selectedDept === 'all' || logDeptStripped.includes(selectedDeptStripped);
       if (isMatch && log.userName) {
         mems.add(log.userName);
       }
