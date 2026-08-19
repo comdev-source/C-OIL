@@ -150,6 +150,23 @@ const sanitizeString = (str, maxLength = 200) => {
   return str.replace(/<[^>]*>/g, '').replace(/[<>"'`]/g, '').trim().slice(0, maxLength);
 };
 
+// [UTIL] 부서명 표준화: 계층 구분자 '>' 자동 삽입 (본부, 팀, 실, 센터, 그룹, 부, 파트)
+const normalizeDepartment = (dept) => {
+  if (!dept || typeof dept !== 'string') return dept;
+  let normalized = dept;
+  const parts = normalized.split(' > ');
+  const refinePart = (part) => {
+    let refined = part;
+    refined = refined.replace(/(\(주\)\s*컴포즈커피|\(주\)컴포즈커피)\s+(?=\S)/g, '$1 > ');
+    refined = refined.replace(/((?:본부|팀|실|센터|그룹|부|파트))\s+(?=\S)/g, '$1 > ');
+    return refined;
+  };
+  normalized = parts.map(refinePart).join(' > ');
+  normalized = normalized.replace(/\s*>\s*>\s*/g, ' > ');
+  normalized = normalized.replace(/\s*>\s*/g, ' > ');
+  return normalized;
+};
+
 // [UI] Multiavatar 기반의 사용자별 고유 캐릭터 아바타 URL 생성
 const getAvatarUrl = (email) => {
   const seed = encodeURIComponent(email || 'default');
@@ -1047,7 +1064,7 @@ const App = () => {
         // [FIX] 관리자가 수정 시 원래 소유자 정보 유지, 신규 작성 시에만 현재 세션 정보 적용
         userId: logData.id ? (existingLogData?.userId || user.uid) : user.uid,
         userName: logData.id ? (existingLogData?.userName || profile?.userName || user.email) : sanitizeString(profile?.userName || user.email, 50),
-        department: logData.id ? (existingLogData?.department || profile?.department || '미지정') : sanitizeString(profile?.department || '미지정', 100),
+        department: normalizeDepartment(logData.id ? (existingLogData?.department || profile?.department || '미지정') : sanitizeString(profile?.department || '미지정', 100)),
         purpose: sanitizeString(logData.purpose, 200),
         distance: Number(logData.distance),              // [SEC] 타입 강제 변환
         amount: Number(logData.amount),
@@ -2857,11 +2874,12 @@ const HistoryTable = ({ logs, onDelete, isAdmin, onRequestCorrection, onEdit, pr
       
       // [FIX] 로그 자체에 부서 정보가 없는 경우, 사용자 정보를 참조하여 필터링 보완
       const logUser = allUsers?.find(u => u.uid === log.userId);
-      const logDept = (log.department || logUser?.department || "").trim();
-      const targetDept = (selectedDept || "").trim();
+      const logDeptRaw = (log.department || logUser?.department || "").trim();
+      const targetDeptRaw = (selectedDept || "").trim();
 
-      // [FIX] 부서 필터링을 계층형이 불완전할 경우를 대비해 includes로 유연하게 처리
-      const matchDept = !showFilters || selectedDept === 'all' || (logDept && logDept.includes(targetDept));
+      // [FIX] 부서 필터링: 양쪽 모두 공백/구분자 제거 후 비교하여 '운영본부 운영4팀' ↔ '운영본부 > 운영4팀' 모두 매칭
+      const stripDept = (d) => d.replace(/\s*>\s*/g, '').replace(/\s+/g, '');
+      const matchDept = !showFilters || selectedDept === 'all' || (logDeptRaw && stripDept(logDeptRaw).includes(stripDept(targetDeptRaw)));
       const matchMember = !showFilters || selectedMember === 'all' || (log.userName && log.userName.includes(selectedMember));
       
       return matchMonth && matchDate && matchDept && matchMember;
@@ -4683,21 +4701,7 @@ const InputLabel = ({ label }) => (
     if (!window.confirm("모든 조직명(설정, 프로필, 과거 기록)에 누락된 '>' 기호를 자동으로 일괄 추가하시겠습니까?")) return;
     setIsMigrating(true);
     try {
-      const normalize = (dept) => {
-        if (!dept) return dept;
-        let normalized = dept;
-        const parts = normalized.split(' > ');
-        const refinePart = (part) => {
-          let refined = part;
-          refined = refined.replace(/(\(주\)\s*컴포즈커피|\(주\)컴포즈커피)\s+(?=\S)/g, '$1 > ');
-          refined = refined.replace(/((?:본부|팀|실|센터|그룹|부|파트))\s+(?=\S)/g, '$1 > ');
-          return refined;
-        }
-        normalized = parts.map(refinePart).join(' > ');
-        normalized = normalized.replace(/\s*>\s*>\s*/g, ' > ');
-        normalized = normalized.replace(/\s*>\s*/g, ' > ');
-        return normalized;
-      };
+      const normalize = normalizeDepartment;
 
       // 1. 설정값 (orgUnits) 업데이트
       const orgRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'orgUnits');
